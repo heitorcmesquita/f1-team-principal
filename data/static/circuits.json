@@ -1,0 +1,170 @@
+[
+  {
+    "name": "Australia",
+    "engine_factor": 0.45,
+    "aero_factor": 0.55,
+    "base_lap_time": 81.8,
+    "laps": 58
+  },
+  {
+    "name": "China",
+    "engine_factor": 0.55,
+    "aero_factor": 0.45,
+    "base_lap_time": 95.4,
+    "laps": 56
+  },
+  {
+    "name": "Japan",
+    "engine_factor": 0.4,
+    "aero_factor": 0.6,
+    "base_lap_time": 90.2,
+    "laps": 53
+  },
+  {
+    "name": "Bahrain",
+    "engine_factor": 0.65,
+    "aero_factor": 0.35,
+    "base_lap_time": 93.5,
+    "laps": 57
+  },
+  {
+    "name": "Saudi Arabia",
+    "engine_factor": 0.7,
+    "aero_factor": 0.3,
+    "base_lap_time": 89.6,
+    "laps": 50
+  },
+  {
+    "name": "Miami",
+    "engine_factor": 0.6,
+    "aero_factor": 0.4,
+    "base_lap_time": 88.7,
+    "laps": 57
+  },
+  {
+    "name": "Emilia-Romagna",
+    "engine_factor": 0.5,
+    "aero_factor": 0.5,
+    "base_lap_time": 79.3,
+    "laps": 63
+  },
+  {
+    "name": "Monaco",
+    "engine_factor": 0.2,
+    "aero_factor": 0.8,
+    "base_lap_time": 71.9,
+    "laps": 78
+  },
+  {
+    "name": "Spain",
+    "engine_factor": 0.35,
+    "aero_factor": 0.65,
+    "base_lap_time": 77.4,
+    "laps": 66
+  },
+  {
+    "name": "Canada",
+    "engine_factor": 0.7,
+    "aero_factor": 0.3,
+    "base_lap_time": 73.1,
+    "laps": 70
+  },
+  {
+    "name": "Austria",
+    "engine_factor": 0.65,
+    "aero_factor": 0.35,
+    "base_lap_time": 64.8,
+    "laps": 71
+  },
+  {
+    "name": "Great Britain",
+    "engine_factor": 0.45,
+    "aero_factor": 0.55,
+    "base_lap_time": 88.3,
+    "laps": 52
+  },
+  {
+    "name": "Belgium",
+    "engine_factor": 0.6,
+    "aero_factor": 0.4,
+    "base_lap_time": 106.3,
+    "laps": 44
+  },
+  {
+    "name": "Hungary",
+    "engine_factor": 0.25,
+    "aero_factor": 0.75,
+    "base_lap_time": 77.1,
+    "laps": 70
+  },
+  {
+    "name": "Netherlands",
+    "engine_factor": 0.35,
+    "aero_factor": 0.65,
+    "base_lap_time": 73.8,
+    "laps": 72
+  },
+  {
+    "name": "Italy",
+    "engine_factor": 0.8,
+    "aero_factor": 0.2,
+    "base_lap_time": 80.6,
+    "laps": 53
+  },
+  {
+    "name": "Azerbaijan",
+    "engine_factor": 0.75,
+    "aero_factor": 0.25,
+    "base_lap_time": 103.4,
+    "laps": 51
+  },
+  {
+    "name": "Singapore",
+    "engine_factor": 0.2,
+    "aero_factor": 0.8,
+    "base_lap_time": 90.7,
+    "laps": 62
+  },
+  {
+    "name": "United States",
+    "engine_factor": 0.55,
+    "aero_factor": 0.45,
+    "base_lap_time": 96.2,
+    "laps": 56
+  },
+  {
+    "name": "Mexico",
+    "engine_factor": 0.6,
+    "aero_factor": 0.4,
+    "base_lap_time": 78.5,
+    "laps": 71
+  },
+  {
+    "name": "Brazil",
+    "engine_factor": 0.5,
+    "aero_factor": 0.5,
+    "base_lap_time": 71.1,
+    "laps": 71
+  },
+  {
+    "name": "Las Vegas",
+    "engine_factor": 0.8,
+    "aero_factor": 0.2,
+    "base_lap_time": 95.8,
+    "laps": 50
+  },
+  {
+    "name": "Qatar",
+    "engine_factor": 0.4,
+    "aero_factor": 0.6,
+    "base_lap_time": 84.5,
+    "laps": 57
+  },
+  {
+    "name": "Abu Dhabi",
+    "engine_factor": 0.5,
+    "aero_factor": 0.5,
+    "base_lap_time": 86.9,
+    "laps": 58
+  }
+]

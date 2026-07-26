@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "name": "McLaren",
+    "engine": 96,
+    "aerodynamics": 99,
+    "reliability": 94
+  },
+  {
+    "id": 2,
+    "name": "Ferrari",
+    "engine": 98,
+    "aerodynamics": 95,
+    "reliability": 90
+  },
+  {
+    "id": 3,
+    "name": "Red Bull",
+    "engine": 95,
+    "aerodynamics": 97,
+    "reliability": 91
+  },
+  {
+    "id": 4,
+    "name": "Mercedes",
+    "engine": 94,
+    "aerodynamics": 94,
+    "reliability": 95
+  },
+  {
+    "id": 5,
+    "name": "Aston Martin",
+    "engine": 90,
+    "aerodynamics": 91,
+    "reliability": 89
+  },
+  {
+    "id": 6,
+    "name": "Alpine",
+    "engine": 88,
+    "aerodynamics": 87,
+    "reliability": 87
+  },
+  {
+    "id": 7,
+    "name": "Williams",
+    "engine": 89,
+    "aerodynamics": 85,
+    "reliability": 88
+  },
+  {
+    "id": 8,
+    "name": "Racing Bulls",
+    "engine": 87,
+    "aerodynamics": 86,
+    "reliability": 86
+  },
+  {
+    "id": 9,
+    "name": "Haas",
+    "engine": 86,
+    "aerodynamics": 84,
+    "reliability": 85
+  },
+  {
+    "id": 10,
+    "name": "Sauber",
+    "engine": 85,
+    "aerodynamics": 83,
+    "reliability": 84
+  }
+]

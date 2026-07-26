@@ -1,0 +1,102 @@
+[
+  {
+    "name": "Lando Norris",
+    "talent": 96,
+    "team_id": 1
+  },
+  {
+    "name": "Oscar Piastri",
+    "talent": 96,
+    "team_id": 1
+  },
+  {
+    "name": "Charles Leclerc",
+    "talent": 95,
+    "team_id": 2
+  },
+  {
+    "name": "Lewis Hamilton",
+    "talent": 94,
+    "team_id": 2
+  },
+  {
+    "name": "Max Verstappen",
+    "talent": 99,
+    "team_id": 3
+  },
+  {
+    "name": "Yuki Tsunoda",
+    "talent": 84,
+    "team_id": 3
+  },
+  {
+    "name": "George Russell",
+    "talent": 94,
+    "team_id": 4
+  },
+  {
+    "name": "Kimi Antonelli",
+    "talent": 90,
+    "team_id": 4
+  },
+  {
+    "name": "Fernando Alonso",
+    "talent": 92,
+    "team_id": 5
+  },
+  {
+    "name": "Lance Stroll",
+    "talent": 82,
+    "team_id": 5
+  },
+  {
+    "name": "Pierre Gasly",
+    "talent": 88,
+    "team_id": 6
+  },
+  {
+    "name": "Franco Colapinto",
+    "talent": 86,
+    "team_id": 6
+  },
+  {
+    "name": "Alexander Albon",
+    "talent": 90,
+    "team_id": 7
+  },
+  {
+    "name": "Carlos Sainz",
+    "talent": 93,
+    "team_id": 7
+  },
+  {
+    "name": "Isack Hadjar",
+    "talent": 87,
+    "team_id": 8
+  },
+  {
+    "name": "Liam Lawson",
+    "talent": 86,
+    "team_id": 8
+  },
+  {
+    "name": "Esteban Ocon",
+    "talent": 88,
+    "team_id": 9
+  },
+  {
+    "name": "Oliver Bearman",
+    "talent": 86,
+    "team_id": 9
+  },
+  {
+    "name": "Nico Hulkenberg",
+    "talent": 89,
+    "team_id": 10
+  },
+  {
+    "name": "Gabriel Bortoleto",
+    "talent": 87,
+    "team_id": 10
+  }
+]
