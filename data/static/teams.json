@@ -4,69 +4,153 @@
     "name": "McLaren",
     "engine": 96,
     "aerodynamics": 99,
-    "reliability": 94
+    "reliability": 94,
+    "logo": "/logos/mclaren.png",
+    "color_primary": "#FF8700",
+    "color_secondary": "#FFB800",
+    "drivers_colors": {
+      "Lando Norris": "#FF8700",
+      "Oscar Piastri": "#FFB800"
+    }
   },
   {
     "id": 2,
     "name": "Ferrari",
     "engine": 98,
     "aerodynamics": 95,
-    "reliability": 90
+    "reliability": 90,
+    "logo": "/logos/ferrari.png",
+    "color_primary": "#E8001B",
+    "color_secondary": "#FF3333",
+    "drivers_colors": {
+      "Charles Leclerc": "#FF3333",
+      "Lewis Hamilton": "#E8001B"
+    }
   },
   {
     "id": 3,
     "name": "Red Bull",
     "engine": 95,
     "aerodynamics": 97,
-    "reliability": 91
+    "reliability": 91,
+    "logo": "/logos/red bull.png",
+    "color_primary": "#0600EF",
+    "color_secondary": "#1E41FF",
+    "drivers_colors": {
+      "Max Verstappen": "#0600EF",
+      "Isack Hadjar": "#1E41FF"
+    }
   },
   {
     "id": 4,
     "name": "Mercedes",
     "engine": 94,
     "aerodynamics": 94,
-    "reliability": 95
+    "reliability": 95,
+    "logo": "/logos/mercedes.webp",
+    "color_primary": "#00A19A",
+    "color_secondary": "#00D4BE",
+    "drivers_colors": {
+      "George Russell": "#00D4BE",
+      "Kimi Antonelli": "#00A19A"
+    }
   },
   {
     "id": 5,
     "name": "Aston Martin",
     "engine": 90,
     "aerodynamics": 91,
-    "reliability": 89
+    "reliability": 89,
+    "logo": "/logos/aston martin.png",
+    "color_primary": "#006B3F",
+    "color_secondary": "#00A859",
+    "drivers_colors": {
+      "Fernando Alonso": "#00A859",
+      "Lance Stroll": "#006B3F"
+    }
   },
   {
     "id": 6,
     "name": "Alpine",
     "engine": 88,
     "aerodynamics": 87,
-    "reliability": 87
+    "reliability": 87,
+    "logo": "/logos/alpine.png",
+    "color_primary": "#0F46F3",
+    "color_secondary": "#4D7FFF",
+    "drivers_colors": {
+      "Pierre Gasly": "#4D7FFF",
+      "Jack Doohan": "#0F46F3"
+    }
   },
   {
     "id": 7,
     "name": "Williams",
     "engine": 89,
     "aerodynamics": 85,
-    "reliability": 88
+    "reliability": 88,
+    "logo": "/logos/williams.png",
+    "color_primary": "#0082FA",
+    "color_secondary": "#64B0FF",
+    "drivers_colors": {
+      "Carlos Sainz": "#0082FA",
+      "Alexander Albon": "#64B0FF"
+    }
   },
   {
     "id": 8,
     "name": "Racing Bulls",
     "engine": 87,
     "aerodynamics": 86,
-    "reliability": 86
+    "reliability": 86,
+    "logo": "/logos/racing bulls.png",
+    "color_primary": "#5E72E4",
+    "color_secondary": "#8B9FFF",
+    "drivers_colors": {
+      "Liam Lawson": "#5E72E4",
+      "Arvin Lindblad": "#8B9FFF"
+    }
   },
   {
     "id": 9,
     "name": "Haas",
     "engine": 86,
     "aerodynamics": 84,
-    "reliability": 85
+    "reliability": 85,
+    "logo": "/logos/haas.png",
+    "color_primary": "#FFFFFF",
+    "color_secondary": "#FF6B00",
+    "drivers_colors": {
+      "Esteban Ocon": "#FF6B00",
+      "Oliver Bearman": "#FFFFFF"
+    }
   },
   {
     "id": 10,
-    "name": "Sauber",
+    "name": "Audi",
     "engine": 85,
     "aerodynamics": 83,
-    "reliability": 84
+    "reliability": 84,
+    "logo": "/logos/audi.webp",
+    "color_primary": "#6B7280",
+    "color_secondary": "#9CA3AF",
+    "drivers_colors": {
+      "Nico Hulkenberg": "#9CA3AF",
+      "Gabriel Bortoleto": "#6B7280"
+    }
+  },
+{
+  "id": 11,
+  "name": "Cadillac",
+  "engine": 84,
+  "aerodynamics": 82,
+  "reliability": 83,
+  "logo": "/logos/cadillac.png",
+  "color_primary": "#111111",
+  "color_secondary": "#C9A227",
+  "drivers_colors": {
+    "Valtteri Bottas": "#111111",
+    "Sergio Perez": "#C9A227"
   }
+} 
 ]

@@ -2,101 +2,133 @@
   {
     "name": "Lando Norris",
     "talent": 96,
-    "team_id": 1
+    "team_id": 1,
+    "country": "gb"
   },
   {
     "name": "Oscar Piastri",
     "talent": 96,
-    "team_id": 1
+    "team_id": 1,
+    "country": "au"
   },
   {
     "name": "Charles Leclerc",
     "talent": 95,
-    "team_id": 2
+    "team_id": 2,
+    "country": "mc"
   },
   {
     "name": "Lewis Hamilton",
     "talent": 94,
-    "team_id": 2
+    "team_id": 2,
+    "country": "gb"
   },
   {
     "name": "Max Verstappen",
     "talent": 99,
-    "team_id": 3
+    "team_id": 3,
+    "country": "nl"
   },
   {
-    "name": "Yuki Tsunoda",
-    "talent": 84,
-    "team_id": 3
+    "name": "Isack Hadjar",
+    "talent": 85,
+    "team_id": 3,
+    "country": "fr"
   },
   {
     "name": "George Russell",
     "talent": 94,
-    "team_id": 4
+    "team_id": 4,
+    "country": "gb"
   },
   {
     "name": "Kimi Antonelli",
     "talent": 90,
-    "team_id": 4
+    "team_id": 4,
+    "country": "it"
   },
   {
     "name": "Fernando Alonso",
     "talent": 92,
-    "team_id": 5
+    "team_id": 5,
+    "country": "es"
   },
   {
     "name": "Lance Stroll",
     "talent": 82,
-    "team_id": 5
+    "team_id": 5,
+    "country": "ca"
   },
   {
     "name": "Pierre Gasly",
     "talent": 88,
-    "team_id": 6
+    "team_id": 6,
+    "country": "fr"
   },
   {
-    "name": "Franco Colapinto",
-    "talent": 86,
-    "team_id": 6
-  },
-  {
-    "name": "Alexander Albon",
-    "talent": 90,
-    "team_id": 7
+    "name": "Jack Doohan",
+    "talent": 84,
+    "team_id": 6,
+    "country": "au"
   },
   {
     "name": "Carlos Sainz",
     "talent": 93,
-    "team_id": 7
+    "team_id": 7,
+    "country": "es"
   },
   {
-    "name": "Isack Hadjar",
-    "talent": 87,
-    "team_id": 8
+    "name": "Alexander Albon",
+    "talent": 90,
+    "team_id": 7,
+    "country": "th"
   },
   {
     "name": "Liam Lawson",
-    "talent": 86,
-    "team_id": 8
+    "talent": 88,
+    "team_id": 8,
+    "country": "nz"
+  },
+  {
+    "name": "Arvin Lindblad",
+    "talent": 85,
+    "team_id": 8,
+    "country": "gb"
   },
   {
     "name": "Esteban Ocon",
     "talent": 88,
-    "team_id": 9
+    "team_id": 9,
+    "country": "fr"
   },
   {
     "name": "Oliver Bearman",
     "talent": 86,
-    "team_id": 9
+    "team_id": 9,
+    "country": "gb"
   },
   {
     "name": "Nico Hulkenberg",
     "talent": 89,
-    "team_id": 10
+    "team_id": 10,
+    "country": "de"
   },
   {
     "name": "Gabriel Bortoleto",
     "talent": 87,
-    "team_id": 10
+    "team_id": 10,
+    "country": "br"
+  },
+  {
+    "name": "Valtteri Bottas",
+    "talent": 88,
+    "team_id": 11,
+    "country": "fi"
+  },
+  {
+    "name": "Sergio Perez",
+    "talent": 89,
+    "team_id": 11,
+    "country": "mx"
   }
 ]
