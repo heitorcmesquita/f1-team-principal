@@ -2,12 +2,13 @@ from typing import Dict, Optional
 
 from fastapi import APIRouter, Body, HTTPException
 
+from backend.app.schemas.race_state import RaceState
 from backend.app.services.race_service import race_service
 
 router = APIRouter(prefix="/race", tags=["Race"])
 
 
-@router.get("/state")
+@router.get("/state", response_model=RaceState)
 def get_state():
     """Return current race state."""
     return race_service.get_state()
@@ -19,7 +20,7 @@ def list_teams():
     return race_service.list_teams()
 
 
-@router.post("/start")
+@router.post("/start", response_model=RaceState)
 def start_season(payload: Dict[str, int] = Body(...)):
     """Start the season/race with chosen player team.
 
@@ -37,42 +38,23 @@ def start_season(payload: Dict[str, int] = Body(...)):
     return race_service.get_state()
 
 
-@router.post("/next-lap")
+@router.post("/next-lap", response_model=RaceState)
 def next_lap(commands: Optional[Dict[str, str]] = Body(None)):
     """Advance the race by one lap.
 
     Optional JSON body: { "Driver Name": "Stay Out|Soft|Medium|Hard|Intermediate|Wet", ... }
     """
-    if not commands:
-        return race_service.next_lap({})
-
-    # Map frontend labels to engine tyre names
-    tyre_map = {
-        "Stay Out": None,
-        "stay out": None,
-        "Soft": "macio",
-        "soft": "macio",
-        "Medium": "medio",
-        "medium": "medio",
-        "Hard": "duro",
-        "hard": "duro",
-        "Intermediate": "intermediario",
-        "intermediate": "intermediario",
-        "Wet": "chuva",
-        "wet": "chuva",
-    }
-
+    cmds = commands or {}
     engine_cmds: Dict[str, str] = {}
-    for driver_name, choice in commands.items():
-        if choice is None:
+    for driver_name, choice in cmds.items():
+        if not choice or str(choice).strip().lower() == "stay out":
             continue
-        mapped = tyre_map.get(choice, None)
-        if mapped:
-            engine_cmds[driver_name] = mapped
+        # The engine normalizes English/PT-BR tyre names itself.
+        engine_cmds[driver_name] = str(choice)
     return race_service.next_lap(engine_cmds)
 
 
-@router.post("/qualifying/tick")
+@router.post("/qualifying/tick", response_model=RaceState)
 def qualifying_tick(payload: Optional[Dict[str, int]] = Body(None)):
     """Advance the current qualifying session.
 
@@ -82,7 +64,7 @@ def qualifying_tick(payload: Optional[Dict[str, int]] = Body(None)):
     return race_service.qualifying_tick(seconds)
 
 
-@router.post("/qualifying/skip")
+@router.post("/qualifying/skip", response_model=RaceState)
 def qualifying_skip(payload: Optional[Dict[str, str]] = Body(None)):
     """Fast-forward qualifying to the start of a specific phase, or to the end.
 
@@ -92,7 +74,7 @@ def qualifying_skip(payload: Optional[Dict[str, str]] = Body(None)):
     return race_service.qualifying_skip(phase)
 
 
-@router.post("/start-race")
+@router.post("/start-race", response_model=RaceState)
 def start_race(starting_tyres: Optional[Dict[str, str]] = Body(None)):
     """Start the race from the qualifying grid using the chosen starting tyres.
 
@@ -101,7 +83,7 @@ def start_race(starting_tyres: Optional[Dict[str, str]] = Body(None)):
     return race_service.start_race(starting_tyres or {})
 
 
-@router.post("/continue")
+@router.post("/continue", response_model=RaceState)
 def continue_race():
     """Continue to next grand prix (awards points and advances circuits)."""
     try:
@@ -115,9 +97,14 @@ def standings():
     return {
         "standings": race_service.get_standings(),
         "constructor_standings": race_service.get_constructor_standings(),
-        "season_results": race_service._season_results,
-        "season_finished": race_service._season_finished,
+        "season_results": race_service.get_season_results(),
+        "season_finished": race_service.is_season_finished(),
     }
+
+
+@router.get("/calendar")
+def calendar():
+    return race_service.get_calendar()
 
 
 @router.get("/analytics")

@@ -1,20 +1,8 @@
 import LogoImg from "./LogoImg";
+import NavBar from "./NavBar";
 import { getCircuitFlagPath } from "../utils/circuitFlags";
 import { formatWeather } from "../utils/weather";
-
-const COMPOUNDS = [
-  { name: "Soft", color: "#e10600" },
-  { name: "Medium", color: "#E9C46A" },
-  { name: "Hard", color: "#E5E7EB" },
-  { name: "Intermediate", color: "#00C2A8" },
-  { name: "Wet", color: "#2B7CE0" },
-];
-
-const PACE = [
-  { compound: "Soft", color: "#e10600", delta: 0 },
-  { compound: "Medium", color: "#E9C46A", delta: 0.45 },
-  { compound: "Hard", color: "#E5E7EB", delta: 0.85 },
-];
+import { PACE_DELTAS } from "../utils/tyres";
 
 const RAIN_HORIZONS = [5, 10, 20];
 
@@ -23,9 +11,12 @@ function fmtPace(delta) {
   return `${delta > 0 ? "+" : ""}${delta.toFixed(2)}`;
 }
 
-export default function RaceHeader({ race, playerTeam }) {
+export default function RaceHeader({ race, playerTeam, onNextLap, sending, view, setView }) {
   const circuitFlag = getCircuitFlagPath(race.race_name);
   const forecast = race.weather_forecast || {};
+  const round = race.circuit_index != null ? race.circuit_index + 1 : null;
+  const totalRounds = race.total_circuits || null;
+  const showNextLap = race.phase === "race" && !race.finished && typeof onNextLap === "function";
 
   let session;
   if (race.phase === "qualifying") {
@@ -34,6 +25,8 @@ export default function RaceHeader({ race, playerTeam }) {
     session = "GRID";
   } else if (race.phase === "selection") {
     session = "TEAMS";
+  } else if (race.finished) {
+    session = "FINISHED";
   } else {
     session = `LAP ${race.lap}/${race.total_laps}`;
   }
@@ -54,23 +47,21 @@ export default function RaceHeader({ race, playerTeam }) {
         </div>
       )}
 
+      {round != null && totalRounds != null && (
+        <div className="race-header-stat race-header-round">
+          <span className="race-header-stat-label">Round</span>
+          <span className="race-header-stat-value">{round} / {totalRounds}</span>
+        </div>
+      )}
+
       <div className="race-header-stat">
         <span className="race-header-stat-label">Weather</span>
         <span className="race-header-stat-value">{formatWeather(race.weather)}</span>
       </div>
 
-      <div className="race-header-compounds">
-        {COMPOUNDS.map((c) => (
-          <span className="compound-chip" key={c.name}>
-            <span className="compound-dot" style={{ backgroundColor: c.color }} />
-            {c.name}
-          </span>
-        ))}
-      </div>
-
       <div className="race-header-pace">
         <span className="race-header-stat-label">Pace</span>
-        {PACE.map((p) => (
+        {PACE_DELTAS.map((p) => (
           <span className="pace-inline" style={{ color: p.color }} key={p.compound}>
             {p.compound[0]} {fmtPace(p.delta)}
           </span>
@@ -88,6 +79,11 @@ export default function RaceHeader({ race, playerTeam }) {
       </div>
 
       <div className="race-header-status">
+        {showNextLap && (
+          <button className="next-lap-btn header-next-lap-btn" onClick={onNextLap} disabled={sending}>
+            {sending ? "Advancing..." : "Next Lap"}
+          </button>
+        )}
         {race.safety_car && (
           <span className="sc-badge">
             <span className="sc-pulse"></span>
@@ -101,8 +97,12 @@ export default function RaceHeader({ race, playerTeam }) {
           </span>
         )}
         <span className="race-header-stat-label">Session</span>
-        <span className="race-header-session">{session}</span>
+        <span className={`race-header-session ${race.finished ? "finished" : ""}`}>
+          {session}
+        </span>
       </div>
+
+      <NavBar view={view} setView={setView} />
     </header>
   );
 }

@@ -1,92 +1,93 @@
-// Team color mapping for analytics and UI consistency
+// Team color mapping for analytics and UI consistency.
+// Values are aligned with data/static/teams.json (single source of truth).
 export const TEAM_COLORS = {
   McLaren: {
     primary: "#FF8700",
-    secondary: "#FFB14A",
+    secondary: "#FFB800",
     logo: "/logos/mclaren.png",
     drivers: {
-      "Lando Norris": "#FFB14A",
-      "Oscar Piastri": "#FF8700",
+      "Lando Norris": "#FF8700",
+      "Oscar Piastri": "#FFB800",
     },
   },
 
   Ferrari: {
-    primary: "#DC0000",
-    secondary: "#FF5A5A",
+    primary: "#E8001B",
+    secondary: "#FF3333",
     logo: "/logos/ferrari.png",
     drivers: {
-      "Charles Leclerc": "#FF5A5A",
-      "Lewis Hamilton": "#DC0000",
+      "Charles Leclerc": "#FF3333",
+      "Lewis Hamilton": "#E8001B",
     },
   },
 
   "Red Bull": {
-    primary: "#1E41FF",
-    secondary: "#6B8CFF",
+    primary: "#0600EF",
+    secondary: "#1E41FF",
     logo: "/logos/red bull.png",
     drivers: {
-      "Max Verstappen": "#6B8CFF",
+      "Max Verstappen": "#0600EF",
       "Isack Hadjar": "#1E41FF",
     },
   },
 
   Mercedes: {
-    primary: "#00D2BE",
-    secondary: "#6EF2E4",
+    primary: "#00A19A",
+    secondary: "#00D4BE",
     logo: "/logos/mercedes.webp",
     drivers: {
-      "George Russell": "#6EF2E4",
-      "Kimi Antonelli": "#00D2BE",
+      "George Russell": "#00D4BE",
+      "Kimi Antonelli": "#00A19A",
     },
   },
 
   "Aston Martin": {
-    primary: "#006F62",
-    secondary: "#2FAE9C",
+    primary: "#006B3F",
+    secondary: "#00A859",
     logo: "/logos/aston martin.png",
     drivers: {
-      "Fernando Alonso": "#2FAE9C",
-      "Lance Stroll": "#006F62",
+      "Fernando Alonso": "#00A859",
+      "Lance Stroll": "#006B3F",
     },
   },
 
   Alpine: {
-    primary: "#0090FF",
-    secondary: "#5DBEFF",
+    primary: "#0F46F3",
+    secondary: "#4D7FFF",
     logo: "/logos/alpine.png",
     drivers: {
-      "Pierre Gasly": "#5DBEFF",
-      "Jack Doohan": "#0090FF",
+      "Pierre Gasly": "#4D7FFF",
+      "Jack Doohan": "#0F46F3",
     },
   },
 
   Williams: {
-    primary: "#005AFF",
-    secondary: "#6EA8FF",
+    primary: "#0082FA",
+    secondary: "#64B0FF",
     logo: "/logos/williams.png",
     drivers: {
-      "Carlos Sainz": "#6EA8FF",
-      "Alexander Albon": "#005AFF",
+      "Carlos Sainz": "#0082FA",
+      "Alexander Albon": "#64B0FF",
     },
   },
 
   "Racing Bulls": {
-    primary: "#1D4ED8",
-    secondary: "#7EA4FF",
+    primary: "#5E72E4",
+    secondary: "#8B9FFF",
     logo: "/logos/racing bulls.png",
     drivers: {
-      "Liam Lawson": "#7EA4FF",
-      "Arvin Lindblad": "#1D4ED8",
+      "Liam Lawson": "#5E72E4",
+      "Arvin Lindblad": "#8B9FFF",
     },
   },
 
   Haas: {
-    primary: "#8A8A8A",
-    secondary: "#E6E6E6",
+    primary: "#FFFFFF",
+    secondary: "#FF6B00",
     logo: "/logos/haas.png",
     drivers: {
-      "Esteban Ocon": "#E6E6E6",
-      "Oliver Bearman": "#8A8A8A",
+      "Esteban Ocon": "#FF6B00",
+      "Oliver Bearman": "#FFFFFF",
     },
   },
 
@@ -101,12 +102,12 @@ export const TEAM_COLORS = {
   },
 
   Cadillac: {
-    primary: "#8B0000",
-    secondary: "#C62828",
+    primary: "#111111",
+    secondary: "#C9A227",
     logo: "/logos/cadillac.png",
     drivers: {
-      "Valtteri Bottas": "#C62828",
-      "Sergio Perez": "#8B0000",
+      "Valtteri Bottas": "#111111",
+      "Sergio Perez": "#C9A227",
     },
   },
 };
@@ -131,4 +132,9 @@ export function getDriverColor(teamName, driverName) {
   if (!team) return "#9ca3af";
 
   return team.drivers[driverName] || team.primary;
+}
+
+export function getSeriesColor(series) {
+  if (!series || !series.team) return "#9ca3af";
+  return getDriverColor(series.team, series.name) || getTeamColor(series.team) || "#9ca3af";
 }

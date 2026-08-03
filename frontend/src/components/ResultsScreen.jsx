@@ -4,9 +4,11 @@ import LogoImg from "./LogoImg";
 import { getCircuitFlagPath } from "../utils/circuitFlags";
 import { formatWeather } from "../utils/weather";
 
-export default function ResultsScreen({ race, teams, onContinue }) {
+export default function ResultsScreen({ race, teams, playerTeam, onContinue }) {
   const [standings, setStandings] = useState(null);
   const [analytics, setAnalytics] = useState(null);
+
+  const playerTeamName = playerTeam && playerTeam.name;
 
   const driverCountry = {};
   (teams || []).forEach((t) => {
@@ -57,16 +59,19 @@ export default function ResultsScreen({ race, teams, onContinue }) {
 
   return (
     <div className="results-screen">
-      <h2 style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      <div className="results-head">
         {circuitFlag && (
           <img
             src={circuitFlag}
             alt={`${race.race_name} flag`}
-            style={{ width: "28px", height: "20px", objectFit: "cover", borderRadius: "3px" }}
+            className="results-head-flag"
           />
         )}
-        <span>Race Results - {race.race_name}</span>
-      </h2>
+        <h2>
+          <span>Race Results</span>
+          <small className="results-head-round">{race.race_name}</small>
+        </h2>
+      </div>
 
       {podiumOrder.length > 0 && (
         <div className="podium">
@@ -112,7 +117,7 @@ export default function ResultsScreen({ race, teams, onContinue }) {
             </thead>
             <tbody>
               {race.classification.map((d) => (
-                <tr key={d.driver} style={{ backgroundColor: d.position === 1 ? "rgba(255, 213, 0, 0.08)" : "transparent" }}>
+                <tr key={d.driver} className={d.team === playerTeamName ? "row-player" : ""}>
                   <td style={{ fontWeight: 700, color: d.position === 1 ? "#ffd500" : "#fff" }}>{d.position}</td>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -162,7 +167,7 @@ export default function ResultsScreen({ race, teams, onContinue }) {
               </thead>
               <tbody>
                 {(standings.standings || []).map((s, index) => (
-                  <tr key={s.driver}>
+                  <tr key={s.driver} className={s.team === playerTeamName ? "row-player" : ""}>
                     <td>{index + 1}</td>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -194,7 +199,7 @@ export default function ResultsScreen({ race, teams, onContinue }) {
               </thead>
               <tbody>
                 {(standings.constructor_standings || []).map((s, index) => (
-                  <tr key={s.team}>
+                  <tr key={s.team} className={s.team === playerTeamName ? "row-player" : ""}>
                     <td>{index + 1}</td>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

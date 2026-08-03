@@ -1,48 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { formatTyre, tyreColor } from "../utils/tyres";
 
 const OPTIONS = ["Stay Out", "Soft", "Medium", "Hard", "Intermediate", "Wet"];
 
-export default function StrategyPanel({ race, playerTeam, onNextLap }) {
-  const [choices, setChoices] = useState({});
-
-  const playerDrivers = useMemo(() => {
-    if (!race || !race.classification) return [];
-    if (playerTeam && playerTeam.drivers) {
-      return playerTeam.drivers.map((d) => d.name);
-    }
-    const myDrivers = race.classification.filter((d) => d.team === (playerTeam && playerTeam.name)).map((d) => d.driver);
-    if (myDrivers.length) return myDrivers;
-    if (race.classification.length) {
-      const team = race.classification.find(Boolean).team;
-      return race.classification.filter((d) => d.team === team).slice(0, 2).map((d) => d.driver);
-    }
-    return [];
-  }, [race, playerTeam]);
-
-  useEffect(() => {
-    const init = {};
-    playerDrivers.forEach((d) => (init[d] = "Stay Out"));
-    setChoices(init);
-  }, [playerDrivers.join("|")]);
-
-  function setChoice(driver, value) {
-    setChoices((s) => ({ ...s, [driver]: value }));
-  }
-
-  async function handleNextLap() {
-    const payload = {};
-    for (const d of playerDrivers) {
-      const choice = choices[d] || "Stay Out";
-      if (choice && choice !== "Stay Out") payload[d] = choice;
-    }
-
-    await onNextLap(payload);
-
-    const reset = {};
-    playerDrivers.forEach((d) => (reset[d] = "Stay Out"));
-    setChoices(reset);
-  }
-
+export default function StrategyPanel({ race, choices, onChoice, confirm, playerDrivers, disabled }) {
   if (!playerDrivers || playerDrivers.length === 0) {
     return (
       <div className="strategy-panel">
@@ -59,6 +19,9 @@ export default function StrategyPanel({ race, playerTeam, onNextLap }) {
       <div className="strategy-drivers">
         {playerDrivers.map((name) => {
           const state = race.classification.find((d) => d.driver === name) || {};
+          const cur = state.tyre || "";
+          const age = state.tyre_age != null ? state.tyre_age : null;
+          const planned = choices[name] && choices[name] !== "Stay Out" ? choices[name] : null;
           return (
             <div key={name} className="strategy-driver">
               <div className="sd-header">
@@ -66,7 +29,28 @@ export default function StrategyPanel({ race, playerTeam, onNextLap }) {
                 <span className="sd-pos">#{state.position || "-"}</span>
               </div>
 
-              <select value={choices[name] || "Stay Out"} onChange={(e) => setChoice(name, e.target.value)}>
+              <div className="sd-tyre">
+                {cur ? (
+                  <>
+                    <span
+                      className="tyre-dot"
+                      style={{ background: tyreColor(cur) }}
+                      aria-hidden="true"
+                    ></span>
+                    <span className="sd-tyre-label">
+                      On {formatTyre(cur)}
+                      {age != null ? ` · ${age} lap${age === 1 ? "" : "s"}` : ""}
+                    </span>
+                  </>
+                ) : (
+                  <span className="sd-tyre-label sd-tyre-empty">No tyre data</span>
+                )}
+                {planned && (
+                  <span className="sd-plan-badge">→ {planned}</span>
+                )}
+              </div>
+
+              <select value={choices[name] || "Stay Out"} onChange={(e) => onChoice(name, e.target.value)} disabled={disabled}>
                 {OPTIONS.map((o) => (
                   <option key={o} value={o}>
                     {o}
@@ -78,9 +62,8 @@ export default function StrategyPanel({ race, playerTeam, onNextLap }) {
         })}
       </div>
 
-      <button className="next-lap-btn strategy-next" onClick={handleNextLap}>
-        Next Lap
-      </button>
+      {disabled && <p className="strategy-locked">Locked — viewing a past lap.</p>}
+      {confirm && <p className="strategy-confirm">✓ {confirm}</p>}
     </div>
   );
 }

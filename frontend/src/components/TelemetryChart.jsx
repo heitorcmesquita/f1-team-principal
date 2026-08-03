@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api";
 import { InteractiveChart } from "./Analytics";
+import { getSeriesColor } from "../utils/teamData";
+import { tyreOrder } from "../utils/tyres";
 
 const METRICS = [
   { key: "pace", label: "Pace" },
@@ -9,19 +11,13 @@ const METRICS = [
   { key: "tyre", label: "Tyre" },
 ];
 
-const TYRE_ORDER = {
-  soft: 1, macio: 1,
-  medium: 2, medio: 2, médio: 2,
-  hard: 3, duro: 3,
-  intermediate: 4, intermediario: 4, intermediário: 4,
-  wet: 5, chuva: 5,
-};
-
 export default function TelemetryChart({ race, playerTeam }) {
   const [telemetry, setTelemetry] = useState(null);
   const [selectedDrivers, setSelectedDrivers] = useState([]);
   const [metric, setMetric] = useState("pace");
   const [zoomDomain, setZoomDomain] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
@@ -38,19 +34,61 @@ export default function TelemetryChart({ race, playerTeam }) {
     return () => (mounted = false);
   }, [race]);
 
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const driversList = useMemo(() => Object.keys((telemetry && telemetry.per_driver) || {}), [telemetry]);
+
+  const driversInitRef = useRef(false);
+  const driversKeyRef = useRef("");
 
   useEffect(() => {
     if (!driversList || driversList.length === 0) return;
-    if (playerTeam && playerTeam.drivers && playerTeam.drivers.length) {
-      const names = playerTeam.drivers.map((d) => d.name).filter((n) => driversList.includes(n));
-      if (names.length) {
-        setSelectedDrivers(names);
-        return;
+    const key = driversList.join(",");
+    if (!driversInitRef.current) {
+      driversInitRef.current = true;
+      driversKeyRef.current = key;
+      if (playerTeam && playerTeam.drivers && playerTeam.drivers.length) {
+        const names = playerTeam.drivers.map((d) => d.name).filter((n) => driversList.includes(n));
+        if (names.length) {
+          setSelectedDrivers(names);
+          return;
+        }
       }
+      setSelectedDrivers(driversList.slice(0, 3));
+      return;
     }
-    setSelectedDrivers(driversList.slice(0, 3));
+    if (driversKeyRef.current !== key) {
+      driversKeyRef.current = key;
+      setSelectedDrivers((s) => s.filter((n) => driversList.includes(n)));
+    }
   }, [driversList, playerTeam]);
+
+  function toggleDriver(name) {
+    setSelectedDrivers((s) => (s.includes(name) ? s.filter((x) => x !== name) : [...s, name]));
+  }
+
+  function selectAll() {
+    setSelectedDrivers(driversList);
+  }
+
+  function selectNone() {
+    setSelectedDrivers([]);
+  }
+
+  function selectMyTeam() {
+    if (playerTeam && playerTeam.drivers) {
+      const names = playerTeam.drivers.map((d) => d.name).filter((n) => driversList.includes(n));
+      setSelectedDrivers(names);
+    }
+  }
 
   const series = useMemo(() => {
     if (!telemetry) return [];
@@ -69,7 +107,7 @@ export default function TelemetryChart({ race, playerTeam }) {
       } else if (metric === "gap") {
         points = laps.map((l) => ({ x: l.lap, y: l.gap_to_leader == null ? null : l.gap_to_leader, raw: l }));
       } else if (metric === "tyre") {
-        points = laps.map((l) => ({ x: l.lap, y: TYRE_ORDER[String(l.tyre).toLowerCase()] || null, raw: l }));
+        points = laps.map((l) => ({ x: l.lap, y: tyreOrder(l.tyre), raw: l }));
       }
 
       return { name: d, points, team };
@@ -78,15 +116,94 @@ export default function TelemetryChart({ race, playerTeam }) {
 
   const scLaps = useMemo(() => (telemetry && telemetry.sc_laps) || [], [telemetry]);
 
+  const triggerLabel = selectedDrivers.length === 0
+    ? "Select drivers…"
+    : selectedDrivers.length === driversList.length
+    ? `All drivers (${driversList.length})`
+    : null;
+
   return (
     <div className="sidebar-telemetry">
-      <div className="sidebar-telemetry-head">
-        <h3>Telemetry</h3>
-        <span className="sidebar-telemetry-count">
-          {selectedDrivers.length} driver{selectedDrivers.length === 1 ? "" : "s"}
-        </span>
+      <div className="telemetry-controls">
+        <div className="driver-dropdown-wrap telemetry-driver-pick" ref={dropdownRef}>
+          <div
+            role="combobox"
+            aria-expanded={dropdownOpen}
+            aria-haspopup="listbox"
+            aria-label="Select drivers to display"
+            className={`driver-dropdown-trigger ${dropdownOpen ? "open" : ""}`}
+            onClick={() => setDropdownOpen((o) => !o)}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setDropdownOpen((o) => !o);
+              }
+            }}
+          >
+            <div className="driver-tags">
+              {triggerLabel ? (
+                <span className="driver-tag-placeholder">{triggerLabel}</span>
+              ) : (
+                selectedDrivers.map((d) => {
+                  const s = series.find((s) => s.name === d);
+                  const color = s ? getSeriesColor(s) : "#9ca3af";
+                  return (
+                    <span key={d} className="driver-tag" style={{ borderColor: color, background: `${color}22` }}>
+                      <span className="driver-tag-dot" style={{ background: color }} />
+                      {d}
+                      <button
+                        className="driver-tag-remove"
+                        onClick={(e) => { e.stopPropagation(); toggleDriver(d); }}
+                      >×</button>
+                    </span>
+                  );
+                })
+              )}
+            </div>
+            <span className="dropdown-arrow">{dropdownOpen ? "▲" : "▼"}</span>
+          </div>
+
+          {dropdownOpen && (
+            <div className="driver-dropdown-panel" role="listbox" aria-label="Drivers">
+              <div className="dropdown-actions">
+                <button onClick={selectAll}>All</button>
+                <button onClick={selectMyTeam}>My Team</button>
+                <button onClick={selectNone}>Clear</button>
+              </div>
+              <div className="dropdown-list">
+                {driversList.map((d) => {
+                  const s = series.find((s) => s.name === d);
+                  const color = s ? getSeriesColor(s) : "#9ca3af";
+                  const active = selectedDrivers.includes(d);
+                  return (
+                    <div
+                      key={d}
+                      role="option"
+                      aria-selected={active}
+                      className={`dropdown-item ${active ? "active" : ""}`}
+                      onClick={() => toggleDriver(d)}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          toggleDriver(d);
+                        }
+                      }}
+                    >
+                      <span className="dropdown-item-dot" style={{ background: active ? color : "#374151", borderColor: color }} />
+                      <span className="dropdown-item-name">{d}</span>
+                      {active && <span className="dropdown-item-check">✓</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
         <select
-          className="metric-select sidebar-metric"
+          className="metric-select sidebar-metric telemetry-metric"
           value={metric}
           onChange={(e) => setMetric(e.target.value)}
         >

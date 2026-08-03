@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { api } from "../api";
-import { getDriverColor, getTeamColor } from "../utils/teamData";
+import { getSeriesColor } from "../utils/teamData";
+import { tyreOrder, TYRE_LABELS } from "../utils/tyres";
 
 const METRICS = [
   { key: "pace", label: "Pace by Lap", unit: "Time" },
@@ -8,15 +9,6 @@ const METRICS = [
   { key: "gap", label: "Gap to Leader", unit: "Seconds" },
   { key: "tyre", label: "Tyre Compound by Lap", unit: "Compound" },
 ];
-
-const TYRE_ORDER = {
-  soft: 1, macio: 1,
-  medium: 2, medio: 2, médio: 2,
-  hard: 3, duro: 3,
-  intermediate: 4, intermediario: 4, intermediário: 4,
-  wet: 5, chuva: 5
-};
-const TYRE_LABEL = { 1: "Soft", 2: "Medium", 3: "Hard", 4: "Intermediate", 5: "Wet" };
 
 function formatLapTime(seconds) {
   if (seconds == null || isNaN(seconds) || seconds === 0) return "-";
@@ -29,11 +21,6 @@ function formatGap(val) {
   if (val == null) return "-";
   if (val === 0) return "Leader";
   return `+${val.toFixed(3)}s`;
-}
-
-function getSeriesColor(s) {
-  if (!s || !s.team) return "#9ca3af";
-  return getDriverColor(s.team, s.name) || getTeamColor(s.team) || "#9ca3af";
 }
 
 // Measure the actual rendered size of a container so the chart can fill it 1:1.
@@ -91,7 +78,7 @@ export function InteractiveChart({ series, scLaps, metric, zoomDomain, setZoomDo
         else if (metric === "position") valFormatted = `P${pt.y}`;
         else if (metric === "gap") valFormatted = formatGap(pt.y);
         else if (metric === "tyre") {
-          const compoundName = TYRE_LABEL[pt.y] || "Unknown";
+          const compoundName = TYRE_LABELS[pt.y] || "Unknown";
           const age = pt.raw?.tyre_age != null ? ` (d${pt.raw.tyre_age})` : "";
           valFormatted = `${compoundName}${age}`;
         }
@@ -163,29 +150,6 @@ export function InteractiveChart({ series, scLaps, metric, zoomDomain, setZoomDo
   };
 
   // Zoom Handlers
-  function handleZoomIn() {
-    const center = (xMin + xMax) / 2;
-    const span = (xMax - xMin) * 0.7;
-    setZoomDomain({
-      xMin: Math.max(fullXMin, Math.round(center - span / 2)),
-      xMax: Math.min(fullXMax, Math.round(center + span / 2)),
-      yMin: fullYMin,
-      yMax: fullYMax,
-    });
-  }
-
-  function handleZoomOut() {
-    const center = (xMin + xMax) / 2;
-    const span = (xMax - xMin) * 1.4;
-    const newMin = Math.max(fullXMin, Math.round(center - span / 2));
-    const newMax = Math.min(fullXMax, Math.round(center + span / 2));
-    if (newMin <= fullXMin && newMax >= fullXMax) {
-      setZoomDomain(null);
-    } else {
-      setZoomDomain({ xMin: newMin, xMax: newMax, yMin: fullYMin, yMax: fullYMax });
-    }
-  }
-
   function handleResetZoom() {
     setZoomDomain(null);
   }
@@ -293,15 +257,11 @@ export function InteractiveChart({ series, scLaps, metric, zoomDomain, setZoomDo
       {/* Modebar / Controls */}
       <div className="plotly-modebar">
         <div className="modebar-info">
-          {isZoomed ? (
+          {isZoomed && (
             <span className="zoomed-badge">Zoomed: Laps {xMin} – {xMax}</span>
-          ) : (
-            <span className="hint-badge">💡 Drag box or scroll wheel to zoom</span>
           )}
         </div>
         <div className="modebar-buttons">
-          <button title="Zoom In" onClick={handleZoomIn} className="modebar-btn">🔍+</button>
-          <button title="Zoom Out" onClick={handleZoomOut} className="modebar-btn">🔍-</button>
           {isZoomed && (
             <button title="Reset Zoom" onClick={handleResetZoom} className="modebar-btn reset-btn">
               🏠 Reset View
@@ -374,7 +334,7 @@ export function InteractiveChart({ series, scLaps, metric, zoomDomain, setZoomDo
           {/* Y-Axis Labels */}
           {metric === "tyre" && [1, 2, 3, 4, 5].map((v) => (
             <g key={v} transform={`translate(${padLeft - 10},${yScale(v)})`}>
-              <text x={0} y={4} textAnchor="end" fontSize={13} fill="#9ca3af" fontWeight="600">{TYRE_LABEL[v]}</text>
+              <text x={0} y={4} textAnchor="end" fontSize={13} fill="#9ca3af" fontWeight="600">{TYRE_LABELS[v]}</text>
             </g>
           ))}
 
@@ -540,16 +500,29 @@ export default function Analytics({ race, playerTeam }) {
 
   const driversList = useMemo(() => Object.keys((telemetry && telemetry.per_driver) || {}), [telemetry]);
 
+  const driversInitRef = useRef(false);
+  const driversKeyRef = useRef("");
+
   useEffect(() => {
     if (!driversList || driversList.length === 0) return;
-    if (playerTeam && playerTeam.drivers && playerTeam.drivers.length) {
-      const names = playerTeam.drivers.map((d) => d.name).filter((n) => driversList.includes(n));
-      if (names.length) {
-        setSelectedDrivers(names);
-        return;
+    const key = driversList.join(",");
+    if (!driversInitRef.current) {
+      driversInitRef.current = true;
+      driversKeyRef.current = key;
+      if (playerTeam && playerTeam.drivers && playerTeam.drivers.length) {
+        const names = playerTeam.drivers.map((d) => d.name).filter((n) => driversList.includes(n));
+        if (names.length) {
+          setSelectedDrivers(names);
+          return;
+        }
       }
+      setSelectedDrivers(driversList.slice(0, 3));
+      return;
     }
-    setSelectedDrivers(driversList.slice(0, 3));
+    if (driversKeyRef.current !== key) {
+      driversKeyRef.current = key;
+      setSelectedDrivers((s) => s.filter((n) => driversList.includes(n)));
+    }
   }, [driversList, playerTeam]);
 
   function toggleDriver(name) {
@@ -589,7 +562,7 @@ export default function Analytics({ race, playerTeam }) {
       } else if (metric === "gap") {
         points = laps.map((l) => ({ x: l.lap, y: l.gap_to_leader == null ? null : l.gap_to_leader, raw: l }));
       } else if (metric === "tyre") {
-        points = laps.map((l) => ({ x: l.lap, y: TYRE_ORDER[String(l.tyre).toLowerCase()] || null, raw: l }));
+        points = laps.map((l) => ({ x: l.lap, y: tyreOrder(l.tyre), raw: l }));
       }
 
       return { name: d, points, team };
@@ -620,10 +593,22 @@ export default function Analytics({ race, playerTeam }) {
 
         {/* Driver multi-select dropdown */}
         <div className="driver-dropdown-wrap" ref={dropdownRef}>
-          <label className="ctrl-label">Drivers</label>
+          <label className="ctrl-label" htmlFor="driver-multiselect">Drivers</label>
           <div
+            id="driver-multiselect"
+            role="combobox"
+            aria-expanded={dropdownOpen}
+            aria-haspopup="listbox"
+            aria-label="Select drivers to display"
             className={`driver-dropdown-trigger ${dropdownOpen ? "open" : ""}`}
             onClick={() => setDropdownOpen((o) => !o)}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setDropdownOpen((o) => !o);
+              }
+            }}
           >
             <div className="driver-tags">
               {triggerLabel ? (
@@ -649,7 +634,7 @@ export default function Analytics({ race, playerTeam }) {
           </div>
 
           {dropdownOpen && (
-            <div className="driver-dropdown-panel">
+            <div className="driver-dropdown-panel" role="listbox" aria-label="Drivers">
               <div className="dropdown-actions">
                 <button onClick={selectAll}>All</button>
                 <button onClick={selectMyTeam}>My Team</button>
@@ -663,8 +648,17 @@ export default function Analytics({ race, playerTeam }) {
                   return (
                     <div
                       key={d}
+                      role="option"
+                      aria-selected={active}
                       className={`dropdown-item ${active ? "active" : ""}`}
                       onClick={() => toggleDriver(d)}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          toggleDriver(d);
+                        }
+                      }}
                     >
                       <span className="dropdown-item-dot" style={{ background: active ? color : "#374151", borderColor: color }} />
                       <span className="dropdown-item-name">{d}</span>

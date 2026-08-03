@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 
 import RaceHeader from "./components/RaceHeader";
@@ -10,6 +10,11 @@ import ResultsScreen from "./components/ResultsScreen";
 import Qualifying from "./components/Qualifying";
 import TyreSelection from "./components/TyreSelection";
 import TelemetryChart from "./components/TelemetryChart";
+import Championship from "./components/Championship";
+import Calendar from "./components/Calendar";
+import Settings from "./components/Settings";
+import SeasonFinished from "./components/SeasonFinished";
+import LapNav from "./components/LapNav";
 
 import "./App.css";
 
@@ -18,10 +23,157 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState([]);
   const [playerTeam, setPlayerTeam] = useState(null);
-  const [popup, setPopup] = useState(null);
+  const [view, setView] = useState("race");
+  const [toasts, setToasts] = useState([]);
+  const [choices, setChoices] = useState({});
+  const [confirm, setConfirm] = useState("");
+  const [sending, setSending] = useState(false);
+
+  // Client-side lap history. Each engine "next lap" pushes a snapshot here so
+  // the user can rewind (and re-forward) without calling the game engine again.
+  const [history, setHistory] = useState([]);
+  // -1 means "live" (latest state); otherwise an index into `history`.
+  const [viewIndex, setViewIndex] = useState(-1);
+
+  const live = viewIndex === -1;
+  const displayed = live ? race : history[viewIndex] || race;
+
+  const playerDrivers = useMemo(() => {
+    if (!race || !race.classification) return [];
+    if (playerTeam && playerTeam.drivers) {
+      return playerTeam.drivers.map((d) => d.name);
+    }
+    const myDrivers = race.classification
+      .filter((d) => d.team === (playerTeam && playerTeam.name))
+      .map((d) => d.driver);
+    if (myDrivers.length) return myDrivers;
+    if (race.classification.length) {
+      const team = race.classification.find(Boolean).team;
+      return race.classification.filter((d) => d.team === team).slice(0, 2).map((d) => d.driver);
+    }
+    return [];
+  }, [race, playerTeam]);
+
+  useEffect(() => {
+    const init = {};
+    playerDrivers.forEach((d) => (init[d] = "Stay Out"));
+    setChoices(init);
+  }, [playerDrivers.join("|")]);
+
+  function setChoice(driver, value) {
+    setChoices((s) => ({ ...s, [driver]: value }));
+    setConfirm("");
+  }
+
+  async function nextLap(commands) {
+    try {
+      const { data } = await api.post("/race/next-lap", commands || {});
+      applyRace(data);
+      return data;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  }
+
+  async function handleNextLap() {
+    const payload = {};
+    for (const d of playerDrivers) {
+      const choice = choices[d] || "Stay Out";
+      if (choice && choice !== "Stay Out") payload[d] = choice;
+    }
+    setSending(true);
+    const next = await nextLap(payload);
+    setSending(false);
+    if (next) {
+      // Store the new state as a navigable snapshot and jump to live.
+      setHistory((h) => [...h, next]);
+      setViewIndex(-1);
+    }
+    const sent = Object.keys(payload);
+    if (next && sent.length) {
+      setConfirm(`Lap ${next.lap || race.lap} sent: ` + sent.map((d) => `${d} → ${payload[d]}`).join(", "));
+    }
+    const reset = {};
+    playerDrivers.forEach((d) => (reset[d] = "Stay Out"));
+    setChoices(reset);
+  }
+
+  function goPrev() {
+    if (viewIndex === -1) {
+      if (history.length > 0) setViewIndex(history.length - 1);
+    } else if (viewIndex > 0) {
+      setViewIndex(viewIndex - 1);
+    }
+  }
+
+  function goNext() {
+    if (viewIndex !== -1) {
+      // Navigate the stored history — no engine call.
+      if (viewIndex < history.length - 1) setViewIndex(viewIndex + 1);
+      else setViewIndex(-1); // back to live
+      return;
+    }
+    // At live: advance the race engine (only if the race can still advance).
+    if (displayed && displayed.phase === "race" && !displayed.finished) {
+      handleNextLap();
+    }
+  }
+
+  // Used by the header "Next Lap" button: behind → move forward in history,
+  // at live → call the engine.
+  function advanceLap() {
+    if (viewIndex !== -1) {
+      goNext();
+      return;
+    }
+    if (displayed && displayed.phase === "race" && !displayed.finished) {
+      handleNextLap();
+    }
+  }
+
+  function handleContinue(nextState) {
+    setRace(nextState);
+    setHistory([]);
+    setViewIndex(-1);
+  }
+
+  const navRef = useRef(null);
+  useEffect(() => {
+    // Keep the latest navigation closures/handlers available to the
+    // keydown listener, which is only subscribed once.
+    navRef.current = { goPrev, goNext, view, viewIndex, race, history };
+  });
+
+  useEffect(() => {
+    function onKey(e) {
+      const ref = navRef.current;
+      if (!ref) return;
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      const tag = (e.target.tagName || "").toUpperCase();
+      if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+      if (ref.view !== "race") return;
+      const d = ref.viewIndex === -1 ? ref.race : ref.history[ref.viewIndex];
+      if (!d || d.phase !== "race") return;
+      e.preventDefault();
+      if (e.key === "ArrowLeft") ref.goPrev();
+      else ref.goNext();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const prevSC = useRef(null);
   const prevWeather = useRef(null);
+  const toastSeq = useRef(0);
+
+  function pushToast(kind, title, body) {
+    const id = ++toastSeq.current;
+    setToasts((t) => [...t, { id, kind, title, body }]);
+    setTimeout(() => {
+      setToasts((t) => t.filter((x) => x.id !== id));
+    }, 8000);
+  }
 
   function applyRace(data) {
     if (!data) return;
@@ -29,16 +181,10 @@ function App() {
     const sc = Boolean(data.safety_car);
     const weather = data.weather || null;
     if (prevSC.current !== null && sc && !prevSC.current) {
-      setPopup({
-        title: "Safety Car Deployed",
-        body: "Track speed restricted and gaps preserved. This is a free pit window — bring your drivers in.",
-      });
+      pushToast("sc", "Safety Car Deployed", "Track speed restricted — this is a free pit window.");
     }
     if (prevWeather.current !== null && weather && weather !== prevWeather.current) {
-      setPopup({
-        title: "Weather Change",
-        body: `Conditions changed to ${weather}. All cars stay out for one lap, then every team pits together — prepare your tyre choice.`,
-      });
+      pushToast("weather", "Weather Change", `Conditions changed to ${weather}. All cars pit together next lap — choose your tyres.`);
     }
     prevSC.current = sc;
     prevWeather.current = weather;
@@ -69,21 +215,15 @@ function App() {
     try {
       const { data } = await api.post("/race/start", { team_id: teamId });
       applyRace(data);
+      setHistory([]);
+      setViewIndex(-1);
       const team = teams.find((t) => t.id === teamId || String(t.id) === String(teamId)) || null;
       setPlayerTeam(team);
+      setView("race");
     } catch (err) {
       console.error(err);
       const msg = err?.response?.data?.detail || err?.message || "Failed to start season";
       alert(msg);
-    }
-  }
-
-  async function nextLap(commands) {
-    try {
-      const { data } = await api.post("/race/next-lap", commands || {});
-      applyRace(data);
-    } catch (err) {
-      console.error(err);
     }
   }
 
@@ -116,14 +256,39 @@ function App() {
     }
   }
 
+  async function handleNewSeason() {
+    setPlayerTeam(null);
+    setRace(null);
+    setHistory([]);
+    setViewIndex(-1);
+    setView("race");
+  }
+
   useEffect(() => {
     loadInitial();
   }, []);
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="loading">
+        <div className="loading-spinner" aria-hidden="true"></div>
+        <span>Loading...</span>
+      </div>
+    );
   }
 
+  // Season complete ceremony
+  if (race && race.season_finished && playerTeam) {
+    return (
+      <div className="app">
+      <RaceHeader race={race} playerTeam={playerTeam} onNextLap={handleNextLap} sending={sending} view={view} setView={setView} />
+        <SeasonFinished onNewSeason={handleNewSeason} />
+        <Toasts toasts={toasts} />
+      </div>
+    );
+  }
+
+  // Team selection / main menu
   if (!race || !race.race_name) {
     return (
       <div className="app">
@@ -132,55 +297,84 @@ function App() {
     );
   }
 
+  const showRaceChrome = view === "race";
+
   return (
     <div className="app">
-      <RaceHeader race={race} playerTeam={playerTeam} />
+      <RaceHeader race={displayed} playerTeam={playerTeam} onNextLap={advanceLap} sending={sending} view={view} setView={setView} />
 
-      {race.phase === "qualifying" ? (
+      {!showRaceChrome ? (
+        <>
+          {view === "championship" && <Championship playerTeam={playerTeam} />}
+          {view === "calendar" && <Calendar />}
+          {view === "settings" && <Settings playerTeam={playerTeam} />}
+        </>
+      ) : race.phase === "qualifying" ? (
         <Qualifying race={race} playerTeam={playerTeam} onTick={qualiTick} onSkip={qualiSkip} />
       ) : race.phase === "tyre_selection" ? (
         <TyreSelection race={race} playerTeam={playerTeam} onStartRace={startRace} />
       ) : (
         <>
-          {race.safety_car && (
-            <div className="sc-alert-banner">
+          {displayed.safety_car && (
+            <div className="sc-alert-banner" role="alert">
               ⚠️ <strong>SAFETY CAR DEPLOYED</strong> — Track Speed Restricted · Gaps Preserved This Lap
             </div>
           )}
-          {race.red_flag && (
-            <div className="rf-alert-banner">
+          {displayed.red_flag && (
+            <div className="rf-alert-banner" role="alert">
               🚩 <strong>RED FLAG STOPPAGE</strong> — Race Suspended Following Incident
             </div>
           )}
 
-          {race.finished ? (
-            <ResultsScreen race={race} teams={teams} onContinue={(nextState) => setRace(nextState)} />
+          <LapNav
+            displayed={displayed}
+            live={live}
+            canPrev={viewIndex === -1 ? history.length > 0 : viewIndex > 0}
+            canNext={viewIndex === -1 ? !displayed.finished && displayed.phase === "race" : true}
+            onPrev={goPrev}
+            onNext={goNext}
+            onLive={() => setViewIndex(-1)}
+          />
+
+          {displayed.finished && live ? (
+            <ResultsScreen race={displayed} teams={teams} playerTeam={playerTeam} onContinue={handleContinue} />
           ) : (
             <div className="content">
               <div className="left-panel">
-                <RaceTable drivers={race.classification} playerTeam={playerTeam} />
+                <RaceTable drivers={displayed.classification} playerTeam={playerTeam} />
+                <EventLog events={displayed.events} />
               </div>
               <div className="right-panel">
-                <StrategyPanel race={race} playerTeam={playerTeam} onNextLap={nextLap} />
-                <TelemetryChart race={race} playerTeam={playerTeam} />
-                <EventLog events={race.events} />
+                <StrategyPanel
+                  race={displayed}
+                  choices={choices}
+                  onChoice={setChoice}
+                  confirm={confirm}
+                  playerDrivers={playerDrivers}
+                  disabled={!live}
+                />
+                <TelemetryChart race={displayed} playerTeam={playerTeam} />
               </div>
             </div>
           )}
         </>
       )}
 
-      {popup && (
-        <div className="popup-overlay">
-          <div className="popup-modal">
-            <h3>{popup.title}</h3>
-            <p>{popup.body}</p>
-            <button className="popup-ok-btn" onClick={() => setPopup(null)}>
-              OK
-            </button>
-          </div>
+      <Toasts toasts={toasts} />
+    </div>
+  );
+}
+
+function Toasts({ toasts }) {
+  if (!toasts.length) return null;
+  return (
+    <div className="toast-stack" role="status" aria-live="polite">
+      {toasts.map((t) => (
+        <div key={t.id} className={`toast toast-${t.kind}`}>
+          <strong>{t.title}</strong>
+          <span>{t.body}</span>
         </div>
-      )}
+      ))}
     </div>
   );
 }

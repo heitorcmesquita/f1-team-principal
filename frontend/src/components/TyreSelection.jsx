@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import LogoImg from "./LogoImg";
+import { tyreColor } from "../utils/tyres";
 
 const TYRE_OPTIONS = ["Soft", "Medium", "Hard", "Intermediate", "Wet"];
 
@@ -106,6 +107,14 @@ export default function TyreSelection({ race, playerTeam, onStartRace }) {
                       </option>
                     ))}
                   </select>
+                  {choices[name] && (
+                    <span
+                      className="tyre-dot tyre-dot-large"
+                      style={{ background: tyreColor(choices[name]) }}
+                      title={choices[name]}
+                      aria-hidden="true"
+                    ></span>
+                  )}
                 </div>
               ))
             )}

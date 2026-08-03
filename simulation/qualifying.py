@@ -136,6 +136,7 @@ def qualifying_snapshot(qual):
                 "driver": e["driver"].name,
                 "team": e["team"],
                 "best_lap": e["best_lap"],
+                "eliminated": e["eliminated"],
             }
             for e in sorted(qual["entries"].values(), key=lambda x: x["grid_position"] or 999)
         ]
