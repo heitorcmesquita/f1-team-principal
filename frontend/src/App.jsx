@@ -330,6 +330,7 @@ function App() {
       <RaceHeader race={race} playerTeam={playerTeam} onNextLap={handleNextLap} sending={sending} view={view} setView={setView} />
         <SeasonFinished onNewSeason={handleNewSeason} />
         <Toasts toasts={toasts} />
+        <Disclaimer />
       </div>
     );
   }
@@ -339,6 +340,7 @@ function App() {
     return (
       <div className="app">
         <TeamSelection teams={teams} onStart={startSeason} />
+        <Disclaimer />
       </div>
     );
   }
@@ -407,6 +409,7 @@ function App() {
       )}
 
       <Toasts toasts={toasts} />
+      <Disclaimer />
     </div>
   );
 }
@@ -422,6 +425,15 @@ function Toasts({ toasts }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function Disclaimer() {
+  return (
+    <footer className="app-footer">
+      Unofficial, non-commercial fan project. Not affiliated with or endorsed by Formula 1, the FIA, or
+      any team, driver, or sponsor.
+    </footer>
   );
 }
 

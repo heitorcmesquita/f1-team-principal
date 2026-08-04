@@ -63,6 +63,15 @@ body {
   text-align: left;
 }
 
+.app-footer {
+  margin-top: auto;
+  padding-top: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted-2);
+  text-align: center;
+}
+
 /* ===== Shared primitives ===== */
 
 button {
