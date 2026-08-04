@@ -183,7 +183,8 @@ button {
 }
 
 .nav-bar:hover .nav-menu,
-.nav-bar:focus-within .nav-menu {
+.nav-bar:focus-within .nav-menu,
+.nav-bar.nav-open .nav-menu {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -2732,12 +2733,243 @@ button {
 }
 
 @media (max-width: 768px) {
+  /* Reset the desktop zoom so mobile renders at native scale. */
+  html {
+    zoom: 1;
+  }
+
+  /* Page scroll instead of fixed-height internal panels. */
+  html,
+  body,
+  #root {
+    height: auto;
+    overflow: visible;
+  }
+
   .app {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    padding: 0 12px 14px;
+    gap: 12px;
+  }
+
+  /* Full-bleed sticky header so Next Lap / nav stay reachable. */
+  .race-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    border-top: 0;
+    margin-left: -12px;
+    margin-right: -12px;
+    gap: 10px;
+    padding: 8px 12px;
+  }
+
+  .race-header h1 {
+    font-size: 15px;
+  }
+
+  .race-header-status {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .header-next-lap-btn {
+    min-height: 42px;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 12px;
+    overflow: visible;
+  }
+
+  .left-panel,
+  .right-panel {
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    overflow: visible;
     padding: 12px;
   }
 
-  .team-grid {
+  .right-panel > * + * {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+
+  /* Race table: page scrolls vertically, table scrolls horizontally. */
+  .race-table-container {
+    flex: none;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .race-table {
+    min-width: 520px;
+  }
+
+  .event-log {
+    flex: none;
+    max-height: none;
+  }
+
+  .event-log-body {
+    flex: none;
+    max-height: none;
+    overflow: visible;
+  }
+
+  /* Lap nav — touch friendly. */
+  .lap-nav {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .lap-nav-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 15px;
+  }
+
+  .lap-nav-label {
+    min-width: 110px;
+    font-size: 11px;
+  }
+
+  /* Toasts fill the top of the screen. */
+  .toast-stack {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+
+  /* Strategy stacks its two drivers vertically. */
+  .strategy-drivers {
     grid-template-columns: 1fr;
+  }
+
+  .strategy-driver select {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 10px;
+    background: var(--bg);
+    color: #fff;
+    border: 1px solid var(--border-2);
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  /* Qualifying. */
+  .qualifying-screen {
+    overflow: visible;
+  }
+
+  .quali-head {
+    gap: 10px;
+    padding: 8px 12px;
+  }
+
+  .quali-table-wrap {
+    height: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .quali-table {
+    min-width: 500px;
+  }
+
+  .quali-side {
+    height: auto;
+    overflow: visible;
+  }
+
+  .quali-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Tyre selection. */
+  .tyre-select-screen {
+    overflow: visible;
+  }
+
+  .tyre-select-body {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .tyre-select-grid {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .tyre-grid-table {
+    min-width: 480px;
+  }
+
+  .tyre-picker-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .tyre-picker-row select {
+    min-width: 0;
+    flex: 1;
+  }
+
+  /* Results. */
+  .results-screen {
+    overflow: visible;
+  }
+
+  .podium {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .podium-step {
+    min-width: 130px;
+    padding: 12px 14px;
+  }
+
+  .podium-step.podium-first {
+    min-height: 130px;
+  }
+
+  /* Team selection. */
+  .team-selection {
+    overflow: visible;
+    padding: 0 2px;
+  }
+
+  .team-grid {
+    flex: none;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    overflow: visible;
+  }
+
+  /* Shell panels (Championship / Calendar / Settings). */
+  .shell-panel {
+    overflow: visible;
+  }
+
+  /* Analytics. */
+  .analytics {
+    overflow: visible;
   }
 
   .analytics-layout {
@@ -2748,25 +2980,82 @@ button {
     position: static;
   }
 
-  .results-grid {
-    grid-template-columns: 1fr;
+  /* Touch targets. */
+  .next-lap-btn,
+  .export-btn {
+    min-height: 44px;
   }
 
-  .race-header {
-    gap: 10px;
-  }
-
-  .race-header h1 {
-    font-size: 15px;
-  }
-
-  .race-header-status {
-    flex-wrap: wrap;
+  .nav-tab {
+    padding: 12px 16px;
   }
 
   .season-champions {
     flex-direction: column;
     align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Small phones: drop the pace/rain detail to keep the header compact. */
+  .race-header-pace,
+  .race-header-rain {
+    display: none;
+  }
+
+  .race-header-title h1 {
+    font-size: 14px;
+  }
+
+  .race-header-team-name {
+    font-size: 11px;
+  }
+
+  .race-table {
+    min-width: 440px;
+  }
+
+  .calendar-podium {
+    flex-wrap: wrap;
+  }
+}
+
+/* Touch devices: don't let :hover states stick after a tap. */
+@media (hover: none) {
+  .next-lap-btn:hover:not(:disabled) {
+    background: var(--accent);
+    transform: none;
+    box-shadow: none;
+  }
+
+  .lap-nav-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .nav-menu-btn:hover {
+    border-color: var(--border);
+  }
+
+  .nav-tab:hover {
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .race-table tbody tr:hover,
+  .tyre-grid-table tr:hover {
+    background: transparent;
+  }
+
+  .race-table tr.highlight-driver:hover {
+    background: rgba(225, 6, 0, 0.12);
+  }
+
+  .race-table tr.leader-row:hover {
+    background: rgba(255, 213, 0, 0.08);
+  }
+
+  .tyre-picker-row select:hover {
+    border-color: var(--border-2);
   }
 }
 

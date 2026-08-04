@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 const TABS = [
   { key: "race", label: "Race" },
   { key: "championship", label: "Championship" },
@@ -6,9 +8,27 @@ const TABS = [
 ];
 
 export default function NavBar({ view, setView }) {
+  const [open, setOpen] = useState(false);
+
+  function select(key) {
+    setView(key);
+    setOpen(false);
+  }
+
   return (
-    <nav className="nav-bar" aria-label="Main navigation">
-      <button className="nav-menu-btn" aria-label="Open menu" aria-expanded="true">
+    <nav
+      className={`nav-bar ${open ? "nav-open" : ""}`}
+      aria-label="Main navigation"
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
+      }}
+    >
+      <button
+        className="nav-menu-btn"
+        aria-label="Open menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
         ☰
       </button>
       <div className="nav-menu">
@@ -16,7 +36,7 @@ export default function NavBar({ view, setView }) {
           <button
             key={t.key}
             className={`nav-tab ${view === t.key ? "active" : ""}`}
-            onClick={() => setView(t.key)}
+            onClick={() => select(t.key)}
             aria-current={view === t.key ? "page" : undefined}
           >
             {t.label}
