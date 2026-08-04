@@ -48,6 +48,54 @@ move, so each player has their own independent world — no accounts, no server
 database. Use **Settings → My Save (Browser)** to export a backup file or import
 one on another device.
 
+## Architecture
+
+The project is split into a **Python simulation/API backend** and a **React
+single-page frontend** that talk over a small REST API. There is no database:
+the game state lives in memory and is persisted per-player via JSON.
+
+```
+f1-manager/
+├── backend/                      # FastAPI backend
+│   └── app/
+│       ├── main.py               # FastAPI app: CORS, /health, serves the built SPA
+│       ├── api/race.py           # REST endpoints (state, teams, start, next-lap, save/load…)
+│       ├── schemas/race_state.py # Pydantic response models (RaceState, DriverState, RaceEvent)
+│       └── services/
+│           ├── race_service.py     # RaceService: weekend phase machine + singleton
+│           ├── season_service.py   # season standings, results, calendar
+│           ├── analytics_service.py# lap-by-lap telemetry history
+│           ├── save_service.py     # tagged-JSON (de)serialization of the object graph
+│           └── state_builder.py    # builds the classification / driver state payloads
+├── simulation/                   # game engine (pure logic, no HTTP)
+│   ├── race.py                   # create_race, run_lap, weather, safety car, final classification
+│   └── qualifying.py             # qualifying session simulation (Q1/Q2/Q3)
+├── game/                         # legacy terminal (CLI) version — entry point is root main.py
+├── data/static/                  # drivers.json, teams.json, circuits.json
+├── models.py / utils.py          # Driver/Team/Circuit dataclasses + shared data loader
+├── frontend/                     # React + Vite single-page app
+│   ├── src/App.jsx               # top-level state, lap history/rewind, auto-save to localStorage
+│   ├── src/api.js                # axios client (dev proxy → /api, prod → same-origin /race)
+│   └── src/components/           # UI panels: RaceTable, StrategyPanel, Qualifying,
+│                                 # TyreSelection, TelemetryChart, Championship, Settings, …
+├── tests/                        # pytest suite (20 tests)
+├── render.yaml                   # Render deploy blueprint
+└── requirements.txt              # Python dependencies
+```
+
+**Request flow.** The React app calls e.g. `POST /race/next-lap`;
+`api/race.py` delegates to the `RaceService` singleton, which advances
+`simulation/race.py` by one lap, records events and analytics, and returns a
+fresh `RaceState`. A fixed `random.Random` instance drives the simulation.
+
+**State & saves.** The whole game lives in memory as a graph of dicts plus
+dataclass references (`Driver`, `Team`, `Circuit`). `save_service.py` converts
+that graph to tagged JSON (e.g. `{"$type": "driver", ...}`) so it can be
+written to a file or shipped to the browser. The frontend keeps each player's
+save in `localStorage` and restores it via `POST /race/load` on page load — so
+every visitor has their own independent world and the server holds no per-user
+data.
+
 ## Deploying
 
 The repo includes `render.yaml` (Render free web service). On Render:
@@ -63,6 +111,19 @@ after a pause can take about a minute to respond.
 
 ## Legal & Disclaimer
 
+### Proprietary code — no commercial reuse
+
+The source code in this repository is **proprietary** and the property of the
+author. **All rights are reserved.** It is shared for reference only and must
+**not** be reused, copied, modified, redistributed, or incorporated into other
+projects — and in particular it may **not be used commercially** or sold — without
+the author's prior written permission. The code is not open source and is **not**
+licensed under MIT, GPL, or any permissive license. See `LICENSE` for the exact
+terms. If you would like to license or reuse any part of this code, contact the
+author.
+
+### Fan-project & trademark disclaimer
+
 This project is an **unofficial, non-commercial fan project**. It is a personal
 hobby project and is not sold, monetized, or otherwise operated for profit.
 
@@ -74,10 +135,10 @@ hobby project and is not sold, monetized, or otherwise operated for profit.
   marks, logos, and trade dress used in this project are the property of their
   respective owners. Their use here is for identification and reference only
   within a fan project and does not imply any sponsorship or endorsement.
-- **Copyright.** Any logos or images that belong to their respective owners are
-  used without permission and solely for illustrative, non-commercial purposes.
-  If you are a rights holder and would like a logo or name removed, please open
-  an issue on this repository and it will be removed promptly.
+- **Third-party assets.** Any logos or images that belong to their respective
+  owners are used without permission and solely for illustrative, non-commercial
+  purposes. If you are a rights holder and would like a logo or name removed,
+  please open an issue on this repository and it will be removed promptly.
 - **No commercial use.** This software is provided free of charge for
   entertainment purposes. It must not be sold, bundled with paid products, or
   used to generate revenue (including via ads or donations) without first

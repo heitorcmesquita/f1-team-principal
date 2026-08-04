@@ -1,16 +1,23 @@
-MIT License
-
+Proprietary License
 Copyright (c) 2026 Heitor Caixeta
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+All rights reserved.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+This software and its source code ("the Software") are proprietary and belong
+to the author. The author grants you a personal, non-exclusive,
+non-transferable, revocable permission to run the Software for personal,
+non-commercial use only.
+
+You may NOT, without the author's prior written permission:
+
+  - copy, modify, merge, publish, distribute, sublicense, or sell the Software
+    or any portion of it;
+  - incorporate the Software, or any derivative of it, into another project;
+  - use the Software or any of its code in any commercial product, service,
+    or revenue-generating activity (including advertising or donations).
+
+All other rights are expressly reserved by the author. You may not remove or
+alter any copyright or proprietary notices contained in the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
