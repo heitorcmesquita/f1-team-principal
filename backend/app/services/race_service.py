@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional
 import json
+import random
+from datetime import datetime
 from pathlib import Path
 
 from simulation.race import (
@@ -21,6 +23,13 @@ from utils import load
 
 from backend.app.schemas.race_state import RaceEvent, RaceState
 from backend.app.services.analytics_service import AnalyticsService
+from backend.app.services.save_service import (
+    SAVE_PATH,
+    _from_jsonable,
+    _to_jsonable,
+    build_lookup,
+    minimal_qualifying,
+)
 from backend.app.services.season_service import SeasonService
 from backend.app.services.state_builder import build_classification, build_driver_state
 
@@ -78,6 +87,28 @@ class RaceService:
 
         # flag to avoid double finalization
         self._race_finalized = False
+
+    def reset(self) -> None:
+        """Return the service to a fresh pre-season state (team selection).
+
+        Used so a new visitor (who has no browser save) does not inherit the
+        game world of a previous visitor on the shared server.
+        """
+        self.season.reset()
+        self.player_team = None
+        self.season.player_team = None
+        self.race = None
+        self.phase = "selection"
+        self._qualifying = None
+        self._grid = None
+        self._starting_tyres = {}
+        self._weekend_wetness = 0
+        self._weekend_weather = ""
+        self._last_snapshot = None
+        self._race_events = []
+        self._forecast_cache = {}
+        self._race_finalized = False
+        self.analytics_svc._history = []
 
     # Team related helpers -------------------------------------------------
     def list_teams(self) -> List[dict]:
@@ -238,11 +269,22 @@ class RaceService:
         return forecast
 
     def _grid_rows(self) -> List[dict]:
-        if self._qualifying is None:
+        if not self._grid:
             return []
-        # Reuse the qualifying snapshot's finished grid to avoid a second
-        # definition of the starting order.
-        return qualifying_snapshot(self._qualifying)["grid"]
+        # Rebuild the tyre-selection grid from the ordered driver names so it
+        # doesn't depend on a live qualifying object (needed after loading a
+        # save that skipped/stored the grid).
+        teams_by_driver = {d.name: d.team.name for d in self.drivers}
+        return [
+            {
+                "position": idx,
+                "driver": name,
+                "team": teams_by_driver.get(name, ""),
+                "best_lap": None,
+                "eliminated": False,
+            }
+            for idx, name in enumerate(self._grid, 1)
+        ]
 
     def get_state(self) -> RaceState:
         """Return the current state depending on the weekend phase.
@@ -479,6 +521,154 @@ class RaceService:
             events=events,
             **self._season_context(),
         )
+
+    # --- save / load -------------------------------------------------------
+    def save_meta(self) -> dict:
+        """Describe the saved game (for the Settings UI), or the live state if
+        nothing has been saved yet."""
+        data = {}
+        if SAVE_PATH.exists():
+            try:
+                data = json.loads(SAVE_PATH.read_text())
+            except (ValueError, OSError):
+                data = {}
+        meta = {"exists": SAVE_PATH.exists()}
+        if meta["exists"]:
+            st = SAVE_PATH.stat()
+            meta["saved_at"] = datetime.fromtimestamp(st.st_mtime).isoformat(timespec="seconds")
+        team_id = data.get("player_team_id", self._player_team_id())
+        meta["player_team_id"] = team_id
+        meta["player_team"] = None
+        if team_id is not None:
+            team = self.season.team_object(team_id)
+            if team is not None:
+                meta["player_team"] = team.name
+        meta["circuit"] = self.season.current_circuit().name
+        meta["circuit_index"] = self.season.circuit_index
+        meta["total_circuits"] = len(self.season.circuits)
+        race = data.get("race")
+        meta["lap"] = None
+        if isinstance(race, dict):
+            meta["lap"] = race.get("lap", 0)
+        elif self.race is not None:
+            meta["lap"] = self.race.get("lap", 0)
+        meta["phase"] = data.get("phase") if data else self.phase
+        return meta
+
+    def export_save(self) -> dict:
+        """Serialize the entire playable state to a JSON-able dict.
+
+        Used by both the server-side save file and the client-side (browser)
+        save so each player can keep their own game in localStorage.
+        """
+        data = {
+            "version": 1,
+            "phase": self.phase,
+            "player_team_id": self._player_team_id(),
+            "season": {
+                "circuit_index": self.season.circuit_index,
+                "standings": dict(self.season._standings),
+                "constructor_standings": dict(self.season._constructor_standings),
+                "season_results": _to_jsonable(self.season._season_results),
+                "season_finished": self.season.season_finished,
+            },
+            "weekend": {
+                "wetness": self._weekend_wetness,
+                "weather": self._weekend_weather,
+                "starting_tyres": dict(self._starting_tyres),
+                "grid": list(self._grid) if self._grid else None,
+            },
+        }
+        if self.race is not None:
+            data["race"] = _to_jsonable(self.race)
+            data["race_events"] = _to_jsonable(self._race_events)
+            data["race_finalized"] = self._race_finalized
+            data["analytics"] = _to_jsonable(self.analytics_svc._history)
+        else:
+            data["race"] = None
+            data["race_events"] = []
+            data["race_finalized"] = False
+            data["analytics"] = []
+        return data
+
+    def save_game(self) -> dict:
+        """Persist the entire playable state to a JSON file."""
+        data = self.export_save()
+        SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        SAVE_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+        return self.save_meta()
+
+    def load_game(self, data: Optional[dict] = None) -> RaceState:
+        """Restore a saved game into the live service and return its state.
+
+        Pass `data` (a JSON-able dict) to restore a client-supplied save, e.g.
+        one stored in a browser's localStorage. With no argument the game is
+        restored from the on-disk save file.
+
+        Qualifying is recreated from the saved weekend weather (mid-session
+        qualifying progress is not persisted); everything else — the race,
+        season standings/results and analytics history — is restored exactly.
+        """
+        if data is None:
+            if not SAVE_PATH.exists():
+                raise FileNotFoundError("No save file found. Start a season and save first.")
+            data = json.loads(SAVE_PATH.read_text())
+        if data.get("version") != 1:
+            raise ValueError("Unsupported save version.")
+
+        drivers_by_name, teams_by_id, circuits_by_name = build_lookup(self.drivers, self.circuits)
+
+        # Season + player team
+        season = data["season"]
+        self.season._circuit_index = int(season["circuit_index"])
+        self.season._standings = dict(season["standings"])
+        self.season._constructor_standings = dict(season["constructor_standings"])
+        self.season._season_results = _from_jsonable(
+            season["season_results"], drivers_by_name, teams_by_id, circuits_by_name
+        )
+        self.season._season_finished = bool(season["season_finished"])
+        team_id = data.get("player_team_id")
+        self.player_team = self.season.team_object(team_id) if team_id is not None else None
+        self.season.player_team = self.player_team
+
+        # Weekend context
+        self._weekend_wetness = float(data["weekend"]["wetness"])
+        self._weekend_weather = data["weekend"]["weather"]
+        self._starting_tyres = dict(data["weekend"].get("starting_tyres", {}))
+        self._grid = list(data["weekend"].get("grid") or []) or None
+
+        self._forecast_cache = {}
+        self._last_snapshot = None
+        self._race_finalized = bool(data.get("race_finalized", False))
+        self._race_events = _from_jsonable(
+            data.get("race_events", []), drivers_by_name, teams_by_id, circuits_by_name
+        ) or []
+        self.analytics_svc._history = _from_jsonable(
+            data.get("analytics", []), drivers_by_name, teams_by_id, circuits_by_name
+        ) or []
+
+        self.phase = data["phase"]
+        if self.phase == "qualifying":
+            self.race = None
+            self._qualifying = create_qualifying(
+                self.drivers, self.season.current_circuit(), track_wetness=self._weekend_wetness
+            )
+        elif self.phase == "tyre_selection":
+            self.race = None
+            self._qualifying = minimal_qualifying(self._weekend_wetness, self._weekend_weather)
+        elif self.phase in ("race", "season_finished"):
+            race = _from_jsonable(data.get("race"), drivers_by_name, teams_by_id, circuits_by_name)
+            if not race:
+                raise ValueError("Save has no race state.")
+            # The RNG can't be serialized; start fresh randomness on load.
+            race["rng"] = random.Random()
+            self.race = race
+            self._qualifying = minimal_qualifying(self._weekend_wetness, self._weekend_weather)
+        else:
+            self.race = None
+            self._qualifying = None
+
+        return self.get_state()
 
 
 # Singleton used by the FastAPI router

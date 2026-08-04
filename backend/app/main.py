@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from backend.app.api.race import router as race_router
 
@@ -21,9 +24,16 @@ app.add_middleware(
 app.include_router(race_router)
 
 
-@app.get("/")
+@app.get("/health")
 def health():
     return {
         "status": "ok",
         "service": "f1-team-principal"
     }
+
+
+# Serve the built SPA from the same origin as the API in production. Routes
+# registered above take precedence, so API/health paths are never shadowed.
+frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if frontend_dist.is_dir():
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")

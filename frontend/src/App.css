@@ -469,6 +469,18 @@ button {
   cursor: not-allowed;
 }
 
+.settings-hint {
+  margin: 10px 0 0;
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.settings-error {
+  margin: 10px 0 0;
+  color: #f87171;
+  font-size: 12px;
+}
+
 /* ===== Season finished ===== */
 .season-finished {
   flex: 1;

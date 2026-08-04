@@ -18,6 +18,8 @@ import LapNav from "./components/LapNav";
 
 import "./App.css";
 
+const SAVE_KEY = "f1manager.save";
+
 function App() {
   const [race, setRace] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,17 @@ function App() {
   function setChoice(driver, value) {
     setChoices((s) => ({ ...s, [driver]: value }));
     setConfirm("");
+  }
+
+  // Keep this player's game in their own browser so every visitor has their
+  // own world instead of sharing one server-side game.
+  async function persistSave() {
+    try {
+      const { data } = await api.get("/race/save/data");
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   async function nextLap(commands) {
@@ -136,6 +149,15 @@ function App() {
     setRace(nextState);
     setHistory([]);
     setViewIndex(-1);
+    persistSave();
+  }
+
+  async function handleGameLoaded() {
+    // A save was restored on the backend — re-fetch everything from scratch.
+    setHistory([]);
+    setViewIndex(-1);
+    await loadInitial();
+    setView("race");
   }
 
   const navRef = useRef(null);
@@ -178,6 +200,7 @@ function App() {
   function applyRace(data) {
     if (!data) return;
     setRace(data);
+    persistSave();
     const sc = Boolean(data.safety_car);
     const weather = data.weather || null;
     if (prevSC.current !== null && sc && !prevSC.current) {
@@ -257,6 +280,12 @@ function App() {
   }
 
   async function handleNewSeason() {
+    localStorage.removeItem(SAVE_KEY);
+    try {
+      await api.post("/race/reset");
+    } catch (err) {
+      console.error(err);
+    }
     setPlayerTeam(null);
     setRace(null);
     setHistory([]);
@@ -265,7 +294,24 @@ function App() {
   }
 
   useEffect(() => {
-    loadInitial();
+    async function boot() {
+      // Restore this visitor's own save (kept in the browser), so everyone
+      // plays their own world. First-time visitors get a fresh server state
+      // rather than inheriting the previous player's game.
+      const saved = localStorage.getItem(SAVE_KEY);
+      try {
+        if (saved) {
+          await api.post("/race/load", JSON.parse(saved));
+        } else {
+          await api.post("/race/reset");
+        }
+      } catch (err) {
+        console.error(err);
+        localStorage.removeItem(SAVE_KEY);
+      }
+      await loadInitial();
+    }
+    boot();
   }, []);
 
   if (loading) {
@@ -307,7 +353,7 @@ function App() {
         <>
           {view === "championship" && <Championship playerTeam={playerTeam} />}
           {view === "calendar" && <Calendar />}
-          {view === "settings" && <Settings playerTeam={playerTeam} />}
+          {view === "settings" && <Settings playerTeam={playerTeam} onLoaded={handleGameLoaded} />}
         </>
       ) : race.phase === "qualifying" ? (
         <Qualifying race={race} playerTeam={playerTeam} onTick={qualiTick} onSkip={qualiSkip} />

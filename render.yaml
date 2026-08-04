@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: f1-team-principal
+    runtime: python
+    plan: free
+    buildCommand: echo "dist is committed, no build needed"
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "true"

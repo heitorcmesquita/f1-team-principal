@@ -1,4 +1,5 @@
 from typing import Dict, Optional
+import json
 
 from fastapi import APIRouter, Body, HTTPException
 
@@ -18,6 +19,13 @@ def get_state():
 def list_teams():
     """Return available teams and their drivers for team selection."""
     return race_service.list_teams()
+
+
+@router.post("/reset", response_model=RaceState)
+def reset():
+    """Reset the server to a fresh pre-season state (team selection)."""
+    race_service.reset()
+    return race_service.get_state()
 
 
 @router.post("/start", response_model=RaceState)
@@ -116,3 +124,38 @@ def analytics():
 def export_csv():
     csv_text = race_service.export_csv()
     return {"csv": csv_text}
+
+
+@router.get("/save/meta")
+def save_meta():
+    """Describe the saved game for the Settings UI (does not require a live season)."""
+    return race_service.save_meta()
+
+
+@router.get("/save/data")
+def export_save():
+    """Return the current game state as a serializable JSON object.
+
+    Used by the client to keep each player's save in their own browser
+    (localStorage) instead of a shared server-side game world.
+    """
+    return race_service.export_save()
+
+
+@router.post("/save")
+def save_game():
+    """Persist the current game state to disk."""
+    return race_service.save_game()
+
+
+@router.post("/load")
+def load_game(payload: Optional[Dict] = Body(None)):
+    """Restore a saved game state.
+
+    Optional JSON body: a save object (e.g. one kept in the browser's
+    localStorage). Without a body the on-disk save file is restored.
+    """
+    try:
+        return race_service.load_game(payload)
+    except (FileNotFoundError, ValueError, json.JSONDecodeError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
