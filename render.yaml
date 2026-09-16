@@ -9,3 +9,15 @@ services:
     envVars:
       - key: PYTHONUNBUFFERED
         value: "true"
+      # LLM AI strategy engine defaults (per-visitor keys are entered in the UI
+      # and never stored server-side, so no AI_API_KEY env var is set here).
+      - key: AI_API_BASE
+        value: "https://api.groq.com/openai/v1"
+      - key: AI_MODEL
+        value: "llama-3.3-70b-versatile"
+      - key: AI_TIMEOUT
+        value: "10"
+      - key: AI_MAX_CALLS_PER_RACE
+        value: "60"
+      - key: AI_TEMPERATURE
+        value: "0.2"

@@ -1522,6 +1522,57 @@ button {
   margin: 0;
 }
 
+/* ===== AI Strategist (optional API key) ===== */
+.team-selection-ai {
+  flex-shrink: 0;
+  background: var(--grad);
+  border: 1px dashed var(--border-2);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.team-selection-ai-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.team-selection-ai-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.team-selection-ai-form input {
+  background: var(--bg);
+  color: #fff;
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: var(--font-mono, monospace);
+}
+
+.team-selection-ai-form input::placeholder {
+  color: var(--muted-2);
+}
+
+.team-selection-ai-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(225, 6, 0, 0.15);
+}
+
+.team-selection-ai-note {
+  margin: 8px 0 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .team-grid {
   flex: 1;
   min-height: 0;

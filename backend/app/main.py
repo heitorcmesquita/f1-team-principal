@@ -16,7 +16,9 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ],
-    allow_credentials=False,
+    # Credentials (the per-visitor session cookie) must travel on cross-origin
+    # dev requests so each browser keeps its own independent game world.
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
