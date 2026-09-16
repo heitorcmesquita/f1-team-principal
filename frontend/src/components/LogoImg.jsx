@@ -9,7 +9,6 @@ export default function LogoImg({ teamName, size = "32px", alt = "" }) {
         width: size,
         height: size,
         objectFit: "contain",
-        marginRight: "8px",
       }}
       onError={(e) => {
         e.target.src = "/logos/f1.png";

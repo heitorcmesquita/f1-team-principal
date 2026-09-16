@@ -17,6 +17,15 @@ export const TYRE_LABELS = {
   wet: "Wet",
 };
 
+// Compact labels for narrow (mobile) layouts.
+export const TYRE_SHORT_LABELS = {
+  soft: "Soft",
+  medium: "Med",
+  hard: "Hard",
+  intermediate: "Inter",
+  wet: "Wet",
+};
+
 // Maps any spelling (EN / PT-BR) to a canonical key.
 const TYRE_ALIASES = {
   soft: "soft", macio: "soft",
@@ -48,6 +57,12 @@ export function formatTyre(tyre) {
   if (tyre == null) return "-";
   const key = canonicalTyre(tyre);
   return key ? TYRE_LABELS[key] : String(tyre);
+}
+
+export function formatTyreShort(tyre) {
+  if (tyre == null) return "-";
+  const key = canonicalTyre(tyre);
+  return key ? TYRE_SHORT_LABELS[key] : String(tyre);
 }
 
 export function tyreOrder(tyre) {

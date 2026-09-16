@@ -1,6 +1,6 @@
 import LogoImg from "./LogoImg";
 import { getTeamColor } from "../utils/teamData";
-import { formatTyre, tyreColor } from "../utils/tyres";
+import { formatTyre, formatTyreShort, tyreColor } from "../utils/tyres";
 
 function formatGap(gap) {
   if (gap === 0) return "Leader";
@@ -43,43 +43,45 @@ export default function DriverRow({ driver, highlight, isLeader, isFastest }) {
         borderLeft: highlight ? `4px solid ${highlightBorder}` : 'none'
       }}
     >
-      <td style={{ fontWeight: 700, color: '#fff' }}>{driver.position}</td>
-      <td>
+      <td className="cell-pos" style={{ fontWeight: 700, color: '#fff' }}>{driver.position}</td>
+      <td className="cell-change">
         <PositionDelta delta={driver.position_delta} reason={driver.position_delta_reason} />
       </td>
 
-      <td>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <td className="cell-driver-wrap">
+        <div className="race-driver-cell">
           <LogoImg teamName={driver.team} size="20px" alt={driver.team} />
           <strong style={{ color: '#fff' }}>{driver.driver}</strong>
         </div>
       </td>
 
-      <td style={{ color: '#9ca3af' }}>{driver.team}</td>
+      <td className="cell-team" style={{ color: '#9ca3af' }}>{driver.team}</td>
 
-      <td>
+      <td className="cell-tyre">
         <span
+          className="tyre-bullet"
           style={{
-            display: "inline-block",
-            width: 12,
-            height: 12,
-            borderRadius: "50%",
             backgroundColor: tyreColor(driver.tyre),
-            marginRight: 8,
             border: "1px solid rgba(255,255,255,0.2)"
           }}
         />
 
-        {formatTyre(driver.tyre)}
+        <span className="tyre-label tyre-label-full">{formatTyre(driver.tyre)}</span>
+        <span className="tyre-label tyre-label-short">{formatTyreShort(driver.tyre)}</span>
       </td>
 
-      <td>{driver.tyre_age}</td>
+      <td className="cell-age">{driver.tyre_age}</td>
 
-      <td style={{ fontWeight: driver.gap === 0 ? 700 : 500, color: driver.gap === 0 ? '#ffd500' : '#9ca3af' }}>{formatGap(driver.gap)}</td>
+      <td className="cell-gap" style={{ fontWeight: driver.gap === 0 ? 700 : 500, color: driver.gap === 0 ? '#ffd500' : '#9ca3af' }}>{formatGap(driver.gap)}</td>
 
-      <td>{formatLap(driver.last_lap)}{isFastest && <span className="fastest-chip" title="Fastest lap">FL</span>}</td>
+      <td className="cell-last">
+        <span className="last-lap-cell">
+          {formatLap(driver.last_lap)}
+          {isFastest && <span className="fastest-chip" title="Fastest lap">FL</span>}
+        </span>
+      </td>
 
-      <td style={{ color: driver.pit_stops > 0 ? '#f3f4f6' : '#6b7280', fontWeight: 600 }}>
+      <td className="cell-pits" style={{ color: driver.pit_stops > 0 ? '#f3f4f6' : '#6b7280', fontWeight: 600 }}>
         {driver.pit_stops || 0}
       </td>
     </tr>

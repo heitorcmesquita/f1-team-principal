@@ -18,15 +18,15 @@ export default function RaceTable({ drivers, playerTeam }) {
       <table className="race-table">
         <thead>
           <tr>
-            <th>Pos</th>
-            <th>Change</th>
-            <th>Driver</th>
-            <th>Team</th>
-            <th>Tyre</th>
-            <th>Age</th>
-            <th>Gap</th>
-            <th>Last Lap</th>
-            <th>Pits</th>
+            <th className="col-pos">Pos</th>
+            <th className="col-change"><span className="hdr-full">Change</span><span className="hdr-short">Chg</span></th>
+            <th className="col-driver">Driver</th>
+            <th className="col-team">Team</th>
+            <th className="col-tyre">Tyre</th>
+            <th className="col-age">Age</th>
+            <th className="col-gap">Gap</th>
+            <th className="col-last"><span className="hdr-full">Last Lap</span><span className="hdr-short">Time</span></th>
+            <th className="col-pits">Pits</th>
           </tr>
         </thead>
 

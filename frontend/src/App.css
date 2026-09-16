@@ -873,6 +873,40 @@ button {
   vertical-align: middle;
 }
 
+.tyre-bullet {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.race-driver-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cell-driver-wrap,
+.cell-team {
+  min-width: 0;
+}
+
+.tyre-label {
+  overflow-wrap: anywhere;
+}
+
+.hdr-short,
+.tyre-label-short {
+  display: none;
+}
+
+.last-lap-cell {
+  white-space: nowrap;
+}
+
 /* ===== Lap Navigation ===== */
 .lap-nav {
   display: flex;
@@ -2805,16 +2839,56 @@ button {
     padding-top: 12px;
   }
 
-  /* Race table: page scrolls vertically, table scrolls horizontally. */
+  /* Race table: page scrolls vertically, table adapts to viewport width. */
   .race-table-container {
     flex: none;
     max-height: none;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: visible;
   }
 
   .race-table {
-    min-width: 520px;
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .race-table th,
+  .race-table td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .race-table .col-pos { width: 6%; }
+  .race-table .col-change { width: 9%; }
+  .race-table .col-driver { width: 22%; }
+  .race-table .col-team { width: 18%; }
+  .race-table .col-tyre { width: 11%; }
+  .race-table .col-age { width: 7%; }
+  .race-table .col-gap { width: 11%; }
+  .race-table .col-last { width: 11%; }
+  .race-table .col-pits { width: 5%; }
+
+  .race-driver-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .race-driver-cell img {
+    flex-shrink: 0;
+  }
+
+  .race-driver-cell strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .cell-driver-wrap,
+  .cell-team {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .event-log {
@@ -2882,12 +2956,37 @@ button {
 
   .quali-table-wrap {
     height: auto;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: visible;
   }
 
   .quali-table {
-    min-width: 500px;
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .quali-table th:nth-child(1) { width: 8%; }
+  .quali-table th:nth-child(2) { width: 25%; }
+  .quali-table th:nth-child(3) { width: 20%; }
+  .quali-table th:nth-child(4) { width: 18%; }
+  .quali-table th:nth-child(5) { width: 10%; }
+  .quali-table th:nth-child(6) { width: 19%; }
+
+  .quali-table td:nth-child(2) div,
+  .tyre-grid-table td:nth-child(2) div {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .quali-table td:nth-child(2) div strong,
+  .tyre-grid-table td:nth-child(2) div strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .quali-table .quali-team,
+  .tyre-grid-table .quali-team {
+    overflow-wrap: anywhere;
   }
 
   .quali-side {
@@ -2911,13 +3010,19 @@ button {
   }
 
   .tyre-select-grid {
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: visible;
   }
 
   .tyre-grid-table {
-    min-width: 480px;
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
   }
+
+  .tyre-grid-table th:nth-child(1) { width: 10%; }
+  .tyre-grid-table th:nth-child(2) { width: 34%; }
+  .tyre-grid-table th:nth-child(3) { width: 30%; }
+  .tyre-grid-table th:nth-child(4) { width: 26%; }
 
   .tyre-picker-row {
     flex-wrap: wrap;
@@ -3012,7 +3117,83 @@ button {
   }
 
   .race-table {
-    min-width: 440px;
+    font-size: 10.5px;
+  }
+
+  .race-table th {
+    padding: 5px 3px;
+    font-size: 8.5px;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+  }
+
+  .race-table td {
+    padding: 4px 3px;
+  }
+
+  .hdr-full,
+  .tyre-label-full {
+    display: none;
+  }
+
+  .hdr-short,
+  .tyre-label-short {
+    display: inline-block;
+  }
+
+  /* Free up horizontal space for the wrapped driver/team names. */
+  .left-panel,
+  .right-panel {
+    padding: 8px;
+  }
+
+  .race-table .col-pos { width: 8%; }
+  .race-table .col-change { width: 9%; }
+  .race-table .col-driver { width: 19%; }
+  .race-table .col-team { width: 15%; }
+  .race-table .col-tyre { width: 10%; }
+  .race-table .col-age { width: 7%; }
+  .race-table .col-gap { width: 12%; }
+  .race-table .col-last { width: 14%; }
+  .race-table .col-pits { width: 6%; }
+
+  .race-table .cell-gap,
+  .race-table .cell-last {
+    font-size: 10px;
+  }
+
+  /* Keep compact numeric/time cells on a single line. */
+  .race-table .cell-pos,
+  .race-table .cell-change,
+  .race-table .cell-tyre,
+  .race-table .cell-age,
+  .race-table .cell-gap,
+  .race-table .cell-last,
+  .race-table .cell-pits {
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .race-table .col-pits {
+    text-align: center;
+  }
+
+  .cell-pits {
+    text-align: center;
+  }
+
+  .race-driver-cell {
+    gap: 4px;
+  }
+
+  .race-driver-cell img {
+    margin-right: 0;
+  }
+
+  .tyre-bullet {
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
   }
 
   .calendar-podium {
