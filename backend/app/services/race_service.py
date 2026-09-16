@@ -45,13 +45,17 @@ class RaceService:
     selection -> qualifying -> tyre_selection -> race.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, save_path: Optional[Path] = None) -> None:
         # Load data from the shared utils loader (drivers, circuits)
         self.drivers, self.circuits = load()
         if not self.circuits:
             raise RuntimeError("No circuits available")
         if not self.drivers:
             raise RuntimeError("No drivers available")
+
+        # Per-session disk save location (sessions pass their own path; the
+        # default keeps the historical shared-file behaviour for tests/CLI).
+        self._save_path = save_path or SAVE_PATH
 
         # Teams are stored in data/static/teams.json — load here for the team selection UI
         teams_path = Path("data/static/teams.json")
@@ -75,6 +79,11 @@ class RaceService:
         self._starting_tyres: Dict[str, str] = {}
         self._weekend_wetness = 0
         self._weekend_weather = ""
+
+        # Optional OpenAI-compatible API key for the LLM AI decision engine.
+        # Lives ONLY in this service's memory, is never serialized to saves or
+        # state, and is cleared on reset / a new season.
+        self._ai_key: Optional[str] = None
 
         # Keep the last snapshot returned by the engine for event reporting
         self._last_snapshot = None
@@ -104,6 +113,7 @@ class RaceService:
         self._starting_tyres = {}
         self._weekend_wetness = 0
         self._weekend_weather = ""
+        self._ai_key = None
         self._last_snapshot = None
         self._race_events = []
         self._forecast_cache = {}
@@ -114,10 +124,13 @@ class RaceService:
     def list_teams(self) -> List[dict]:
         return self.season.list_teams()
 
-    def start_season(self, team_id: int):
+    def start_season(self, team_id: int, ai_key: Optional[str] = None):
         """Initialize a race using the provided player team id.
 
-        This does not advance the race; it only creates the race instance.
+        This does not advance the race; it only creates the race instance. An
+        optional OpenAI-compatible API key opts the session into the LLM AI
+        decision engine; it is held in memory only (never saved) and is cleared
+        by ``reset()`` or a new season.
         """
         if team_id not in self.teams:
             raise ValueError("Invalid team id")
@@ -140,6 +153,7 @@ class RaceService:
 
         self.player_team = team_obj
         self.season.player_team = team_obj
+        self._ai_key = (ai_key or "").strip() or None
         # Initialize championship state
         self.season.reset()
 
@@ -166,7 +180,7 @@ class RaceService:
         """Advance the current qualifying session by `seconds` of simulated track time."""
         if self.phase != "qualifying" or self._qualifying is None:
             return self.get_state()
-        _, events = advance_qualifying(self._qualifying, max(1, seconds))
+        _, events = advance_qualifying(self._qualifying, max(1, seconds), self._ai_key)
         if events:
             self._qualifying["events"].extend(events)
         if self._qualifying["finished"]:
@@ -178,7 +192,7 @@ class RaceService:
         until the full grid is set when no phase is given."""
         if self.phase != "qualifying" or self._qualifying is None:
             return self.get_state()
-        _, events = skip_qualifying(self._qualifying, phase)
+        _, events = skip_qualifying(self._qualifying, phase, self._ai_key)
         if events:
             self._qualifying["events"].extend(events)
         if self._qualifying["finished"]:
@@ -204,6 +218,11 @@ class RaceService:
             starting_tyres=self._starting_tyres,
             track_wetness=self._weekend_wetness,
         )
+        # Record which engine runs AI strategy this race (name only — never the
+        # key — so tagged-JSON saves stay secret-free and load cleanly).
+        from simulation.ai.factory import engine_name
+
+        self.race["ai_engine"] = engine_name(self._ai_key)
         self._last_snapshot = None
         self._race_events = []
         self._race_finalized = False
@@ -359,7 +378,7 @@ class RaceService:
             return self.get_state()
 
         cmds = commands or {}
-        snapshot = run_lap(self.race, cmds)
+        snapshot = run_lap(self.race, cmds, self._ai_key)
         self._last_snapshot = snapshot
 
         # record history for analytics — store a deep copy so past snapshots don't mutate
@@ -527,14 +546,14 @@ class RaceService:
         """Describe the saved game (for the Settings UI), or the live state if
         nothing has been saved yet."""
         data = {}
-        if SAVE_PATH.exists():
+        if self._save_path.exists():
             try:
-                data = json.loads(SAVE_PATH.read_text())
+                data = json.loads(self._save_path.read_text())
             except (ValueError, OSError):
                 data = {}
-        meta = {"exists": SAVE_PATH.exists()}
+        meta = {"exists": self._save_path.exists()}
         if meta["exists"]:
-            st = SAVE_PATH.stat()
+            st = self._save_path.stat()
             meta["saved_at"] = datetime.fromtimestamp(st.st_mtime).isoformat(timespec="seconds")
         team_id = data.get("player_team_id", self._player_team_id())
         meta["player_team_id"] = team_id
@@ -594,8 +613,8 @@ class RaceService:
     def save_game(self) -> dict:
         """Persist the entire playable state to a JSON file."""
         data = self.export_save()
-        SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        SAVE_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+        self._save_path.parent.mkdir(parents=True, exist_ok=True)
+        self._save_path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
         return self.save_meta()
 
     def load_game(self, data: Optional[dict] = None) -> RaceState:
@@ -610,9 +629,9 @@ class RaceService:
         season standings/results and analytics history — is restored exactly.
         """
         if data is None:
-            if not SAVE_PATH.exists():
+            if not self._save_path.exists():
                 raise FileNotFoundError("No save file found. Start a season and save first.")
-            data = json.loads(SAVE_PATH.read_text())
+            data = json.loads(self._save_path.read_text())
         if data.get("version") != 1:
             raise ValueError("Unsupported save version.")
 
@@ -669,7 +688,3 @@ class RaceService:
             self._qualifying = None
 
         return self.get_state()
-
-
-# Singleton used by the FastAPI router
-race_service = RaceService()

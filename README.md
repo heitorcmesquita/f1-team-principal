@@ -48,6 +48,49 @@ move, so each player has their own independent world — no accounts, no server
 database. Use **Settings → My Save (Browser)** to export a backup file or import
 one on another device.
 
+On the server, each visitor is isolated behind a per-session `f1_session`
+cookie: a fresh browser gets its own independent world and its own on-disk save
+file (`data/saves/<session_id>.json`), so nobody shares or mutates another
+player's season.
+
+## AI Race Strategist (optional)
+
+By default the AI opponents decide tire calls with the built-in **heuristic**
+engine (rookie-professional behaviors simulated by team risk profiles). On the
+*Choose Your Team* screen you can instead paste an **OpenAI-compatible API key**
+(optional) to let an **LLM** decide the AI teams' race strategy lap by lap:
+
+- One batched LLM call serves all AI drivers on the laps a decision actually
+  matters (safety car, weather change, tires near/over their wear cliff, the
+  mandatory two-dry-compound rule) — typically a handful of calls per race,
+  capped at `AI_MAX_CALLS_PER_RACE` (default 60).
+- The call stays in the session's server memory only. It is **never** written
+  to disk, localStorage, logs, save exports, or API responses, and is cleared
+  when you reset or start a new season. Nothing about it is ever shared with
+  other visitors. Because it is an in-memory value in this service, you re-enter
+  it after reloading the page.
+- Any failure — timeout, HTTP error, malformed response, unknown tire — falls
+  back to the heuristic for that lap, so the race never throws and a save never
+  corrupts.
+
+**Getting a key:** any OpenAI-compatible provider works (free tiers available):
+
+- [Groq](https://console.groq.com/keys) (default base URL and model)
+- Google (Gemini) — `https://generativelanguage.googleapis.com/v1beta/openai`
+- [OpenRouter](https://openrouter.ai) — `https://openrouter.ai/api/v1`
+- [Cerebras](https://www.cerebras.ai) — `https://api.cerebras.ai/v1`
+
+Point the server at your provider via env vars (no key env var is used — keys
+are per-visitor and come from the UI):
+
+```
+AI_API_BASE   default https://api.groq.com/openai/v1
+AI_MODEL      default llama-3.3-70b-versatile
+AI_TIMEOUT    default 10
+AI_TEMPERATURE default 0.2
+AI_MAX_CALLS_PER_RACE default 60
+```
+
 ## Architecture
 
 The project is split into a **Python simulation/API backend** and a **React
@@ -59,32 +102,40 @@ f1-manager/
 ├── backend/                      # FastAPI backend
 │   └── app/
 │       ├── main.py               # FastAPI app: CORS, /health, serves the built SPA
-│       ├── api/race.py           # REST endpoints (state, teams, start, next-lap, save/load…)
+│       ├── api/race.py           # REST endpoints behind a per-session dependency
 │       ├── schemas/race_state.py # Pydantic response models (RaceState, DriverState, RaceEvent)
 │       └── services/
-│           ├── race_service.py     # RaceService: weekend phase machine + singleton
+│           ├── session_service.py  # per-visitor sections: {session_id → RaceService}
+│           ├── race_service.py     # RaceService: weekend phase machine (one per session)
 │           ├── season_service.py   # season standings, results, calendar
 │           ├── analytics_service.py# lap-by-lap telemetry history
 │           ├── save_service.py     # tagged-JSON (de)serialization of the object graph
 │           └── state_builder.py    # builds the classification / driver state payloads
 ├── simulation/                   # game engine (pure logic, no HTTP)
 │   ├── race.py                   # create_race, run_lap, weather, safety car, final classification
-│   └── qualifying.py             # qualifying session simulation (Q1/Q2/Q3)
+│   ├── qualifying.py             # qualifying session simulation (Q1/Q2/Q3)
+│   └── ai/                       # pluggable AI decision engine
+│       ├── base.py               # DecisionEngine protocol + PitDecision
+│       ├── heuristic.py          # the original strategy AI (verbatim reference + fallback)
+│       ├── prompt.py             # LLM system/state payload builders
+│       ├── api.py                # OpenAI-compatible chat engine (batched, throttled)
+│       └── factory.py            # resolve_engine(ai_key) → heuristic | api
 ├── game/                         # legacy terminal (CLI) version — entry point is root main.py
 ├── data/static/                  # drivers.json, teams.json, circuits.json
 ├── models.py / utils.py          # Driver/Team/Circuit dataclasses + shared data loader
 ├── frontend/                     # React + Vite single-page app
 │   ├── src/App.jsx               # top-level state, lap history/rewind, auto-save to localStorage
-│   ├── src/api.js                # axios client (dev proxy → /api, prod → same-origin /race)
+│   ├── src/api.js                # axios client (withCredentials for the session cookie)
 │   └── src/components/           # UI panels: RaceTable, StrategyPanel, Qualifying,
-│                                 # TyreSelection, TelemetryChart, Championship, Settings, …
-├── tests/                        # pytest suite (20 tests)
+│                                 # TyreSelection, TeamSelection (AI key), Settings, …
+├── tests/                        # pytest suite (38 tests)
 ├── render.yaml                   # Render deploy blueprint
 └── requirements.txt              # Python dependencies
 ```
 
-**Request flow.** The React app calls e.g. `POST /race/next-lap`;
-`api/race.py` delegates to the `RaceService` singleton, which advances
+**Request flow.** The React app calls e.g. `POST /race/next-lap`; `api/race.py`
+resolves the caller's `f1_session` cookie to *its own* `RaceService` (creating a
+fresh independent world for a new visitor), which advances
 `simulation/race.py` by one lap, records events and analytics, and returns a
 fresh `RaceState`. A fixed `random.Random` instance drives the simulation.
 
@@ -94,7 +145,8 @@ that graph to tagged JSON (e.g. `{"$type": "driver", ...}`) so it can be
 written to a file or shipped to the browser. The frontend keeps each player's
 save in `localStorage` and restores it via `POST /race/load` on page load — so
 every visitor has their own independent world and the server holds no per-user
-data.
+data (an optional AI API key lives transiently in the calling visitor's
+`RaceService` until reset).
 
 ## Deploying
 

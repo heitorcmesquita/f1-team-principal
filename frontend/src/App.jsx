@@ -234,9 +234,9 @@ function App() {
     }
   }
 
-  async function startSeason(teamId) {
+  async function startSeason(teamId, aiApiKey) {
     try {
-      const { data } = await api.post("/race/start", { team_id: teamId });
+      const { data } = await api.post("/race/start", { team_id: teamId, ai_api_key: aiApiKey });
       applyRace(data);
       setHistory([]);
       setViewIndex(-1);

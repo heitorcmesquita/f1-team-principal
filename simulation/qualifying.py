@@ -52,12 +52,13 @@ def create_qualifying(drivers, circuit, track_wetness=None):
     return qual
 
 
-def advance_qualifying(qual, seconds):
+def advance_qualifying(qual, seconds, ai_key=None):
     """Advance the current Q session by `seconds` of simulated track time.
 
     Returns (qual, events). When the session runs out of time the phase is
     finalized (eliminations or final grid) and the next phase is prepared
-    automatically.
+    automatically. ``ai_key`` (optional) selects the LLM decision engine for the
+    AI drivers' second-run decisions.
     """
     events = []
     if qual["finished"]:
@@ -66,7 +67,7 @@ def advance_qualifying(qual, seconds):
     while qual["timeline"] and qual["timeline"][0][0] <= target:
         t, _seq, kind, payload = heapq.heappop(qual["timeline"])
         if kind == "out2":
-            _process_run2(qual, payload, events)
+            _process_run2(qual, payload, events, ai_key)
         elif kind == "out":
             name, run = payload
             qual["entries"][name]["on_track"] = True
@@ -85,7 +86,7 @@ def advance_qualifying(qual, seconds):
     return qual, events
 
 
-def skip_qualifying(qual, target_phase=None):
+def skip_qualifying(qual, target_phase=None, ai_key=None):
     """Fast-forward through the rest of the current session (and any following
     sessions) until the requested phase starts, or until the full starting grid
     is complete when no target is given."""
@@ -95,12 +96,12 @@ def skip_qualifying(qual, target_phase=None):
         target_index = PHASES.index(target_phase)
         while not qual["finished"] and PHASES.index(qual["phase"]) < target_index and guard < len(PHASES) * 2:
             guard += 1
-            _, phase_events = advance_qualifying(qual, qual["time_left"] or qual["session_duration"])
+            _, phase_events = advance_qualifying(qual, qual["time_left"] or qual["session_duration"], ai_key)
             events.extend(phase_events)
         return qual, events
     while not qual["finished"] and guard < len(PHASES) * 2:
         guard += 1
-        _, phase_events = advance_qualifying(qual, qual["time_left"] or qual["session_duration"])
+        _, phase_events = advance_qualifying(qual, qual["time_left"] or qual["session_duration"], ai_key)
         events.extend(phase_events)
     return qual, events
 
@@ -259,7 +260,7 @@ def _plan_second_runs(qual):
         _push_event(qual, out_time, "out2", name)
 
 
-def _process_run2(qual, name, events):
+def _process_run2(qual, name, events, ai_key=None):
     entry = qual["entries"][name]
     if name not in qual["active_names"]:
         return
@@ -271,29 +272,18 @@ def _process_run2(qual, name, events):
     out_time = qual["run2"][name]["out_time"]
     if out_time + pace + 20.0 > qual["session_duration"]:
         return
-    if not _decide_run2(qual, name):
+    if not _decide_run2(qual, name, ai_key):
         return
     qual["run2"][name]["activated"] = True
     _new_run(qual, name, out_time, second=True)
     events.append(f"{name} heads out for a second run.")
 
 
-def _decide_run2(qual, name):
-    entry = qual["entries"][name]
-    if entry["best_lap"] is None:
-        return True
-    order = _classification(qual)
-    total = len(order)
-    pos = order.index(name) if name in order else total
-    at_risk = pos >= total * 0.5
-    if at_risk:
-        return random.random() < 0.9
-    circuit = qual["circuit"]
-    pace = projected_pace(entry["driver"], circuit, "soft")
-    field = [projected_pace(qual["entries"][n]["driver"], circuit, "soft") for n in qual["active_names"] if n != name]
-    avg = sum(field) / max(1, len(field))
-    chance = 0.45 - max(0.0, (avg - pace)) * 0.35
-    return random.random() < max(0.10, min(0.45, chance))
+def _decide_run2(qual, name, ai_key=None):
+    """Delegate the second-run decision to the configured AI engine."""
+    from simulation.ai.factory import resolve_engine
+
+    return resolve_engine(ai_key).decide_run2(qual, name)
 
 
 def _execute_flying_lap(qual, run, t, events):

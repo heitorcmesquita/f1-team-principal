@@ -1,3 +1,4 @@
+import { useState } from "react";
 import LogoImg from "./LogoImg";
 
 const STATS = [
@@ -26,6 +27,8 @@ function StatBar({ label, value, color }) {
 }
 
 export default function TeamSelection({ teams, onStart }) {
+  const [aiApiKey, setAiApiKey] = useState("");
+
   if (!teams || teams.length === 0) return <p>No teams available.</p>;
 
   return (
@@ -33,6 +36,24 @@ export default function TeamSelection({ teams, onStart }) {
       <div className="team-selection-head">
         <h2>Choose Your Team</h2>
         <p className="team-selection-sub">Pick the team you will manage for the full season.</p>
+      </div>
+
+      <div className="team-selection-ai">
+        <label className="team-selection-ai-form" htmlFor={`ai-api-key`}>
+          <span className="team-selection-ai-label">AI Race Strategist (optional)</span>
+          <input
+            id="ai-api-key"
+            type="password"
+            value={aiApiKey}
+            onChange={(e) => setAiApiKey(e.target.value)}
+            placeholder="Paste an OpenAI-compatible API key (e.g. a free Groq key)"
+          />
+        </label>
+        <p className="team-selection-ai-note">
+          With a key, the AI opponents' lap-by-lap strategy is decided by an LLM. Leave empty for
+          the built-in fast heuristic. The key stays only in this session&apos;s memory — it is
+          never saved to disk, localStorage, or shown again after you reload.
+        </p>
       </div>
 
       <div className="team-grid">
@@ -71,7 +92,7 @@ export default function TeamSelection({ teams, onStart }) {
             </div>
 
             <div className="team-actions">
-              <button onClick={() => onStart(t.id)}>Start Season</button>
+              <button onClick={() => onStart(t.id, aiApiKey.trim())}>Start Season</button>
             </div>
           </div>
         ))}
